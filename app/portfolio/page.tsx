@@ -3,28 +3,25 @@ import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { AppShell } from '@/components/shared/AppShell'
 import { Icon } from '@/components/ui/Icon'
+import { CUSTOMERS, type Customer } from '@/lib/customers'
 
-// MOCK ONLY — no real PHI. Patient/group caseload for Access Health demo.
-const PORTFOLIO_CUSTOMERS = [
-  { id: 1,  name: 'Anderson, M.',        segment: 'Individual', tier: 'Priority', revenue: 4.2,  aum: 8.4,  health: 62, nextAction: 'Prior-auth call · 09:30' },
-  { id: 2,  name: 'Garcia family',       segment: 'Family',     tier: 'Priority', revenue: 2.8,  aum: 12.1, health: 88, nextAction: 'Benefits walk-through · 16:00' },
-  { id: 3,  name: 'Sharma group plan',   segment: 'Group',      tier: 'Priority', revenue: 6.1,  aum: 15.2, health: 91, nextAction: 'Onboarding sign-off' },
-  { id: 4,  name: 'Patel, R.',           segment: 'Individual', tier: 'Standard', revenue: 1.9,  aum: 3.8,  health: 74, nextAction: 'Eligibility refresh · 21 May' },
-  { id: 5,  name: 'Reyes Group',         segment: 'Group',      tier: 'Priority', revenue: 3.4,  aum: 6.7,  health: 79, nextAction: 'Census update window' },
-  { id: 6,  name: 'Carter family',       segment: 'Family',     tier: 'Standard', revenue: 1.1,  aum: 2.2,  health: 43, nextAction: 'Eligibility overdue — reassign?' },
-  { id: 7,  name: 'Lopez, S.',           segment: 'Individual', tier: 'Standard', revenue: 2.3,  aum: 4.6,  health: 67, nextAction: 'Appeal-window reply · held' },
-  { id: 8,  name: 'Singh, H.',           segment: 'Individual', tier: 'Standard', revenue: 0.8,  aum: 1.6,  health: 82, nextAction: 'Eligibility reminder sent' },
-  { id: 9,  name: 'Davis & Park',        segment: 'Provider',   tier: 'Priority', revenue: 5.2,  aum: 18.4, health: 95, nextAction: 'Provider-rate amendment · Q4' },
-  { id: 10, name: 'Baylor Scott & White', segment: 'Provider',  tier: 'Priority', revenue: 1.6,  aum: 3.2,  health: 71, nextAction: 'Records request · 9 May' },
-  { id: 11, name: 'Robert Chen',         segment: 'Individual', tier: 'Priority', revenue: 3.1,  aum: 9.8,  health: 87, nextAction: 'Birthday — greeted today' },
-  { id: 12, name: 'Iyer, L.',            segment: 'Individual', tier: 'Standard', revenue: 0.9,  aum: 4.2,  health: 90, nextAction: 'Plan renewal · 22 May' },
-  { id: 13, name: 'Anand & Sons',        segment: 'Group',      tier: 'Standard', revenue: 0.7,  aum: 1.4,  health: 55, nextAction: 'Dependent enrollment · walk-in' },
-  { id: 14, name: 'Walker family',        segment: 'Family',     tier: 'Standard', revenue: 1.2,  aum: 2.4,  health: 76, nextAction: 'Eligibility · 11 days left' },
-  { id: 15, name: 'Desai practice',      segment: 'Provider',   tier: 'Priority', revenue: 4.8,  aum: 9.6,  health: 84, nextAction: 'Contract amendment delivery' },
-  { id: 16, name: 'Kulkarni Pediatrics', segment: 'Provider',   tier: 'Standard', revenue: 1.4,  aum: 2.8,  health: 69, nextAction: 'Fee schedule review' },
-  { id: 17, name: 'Reddy Ventures',      segment: 'Group',      tier: 'Priority', revenue: 3.7,  aum: 11.2, health: 92, nextAction: 'Quarterly check-in' },
-  { id: 18, name: 'Bose, A.',            segment: 'Individual', tier: 'Standard', revenue: 2.1,  aum: 4.2,  health: 38, nextAction: 'Denial alert — urgent review' },
-]
+// Caseload page now reads from the shared CUSTOMERS roster
+// (lib/customers.ts) — same source as Live Call Assist. Click a row
+// to open the detail page; routed by memberId.
+
+function totalBilled(c: Customer): number {
+  return c.claims.reduce((s, cl) => s + cl.billed, 0)
+}
+
+function nextActionFor(c: Customer): string {
+  // Short, scan-friendly version of the call reason.
+  const r = c.callReason
+  return r.length > 70 ? r.slice(0, 67) + '…' : r
+}
+
+function flowLabel(f: Customer['flow']): string {
+  return f === 'claim_status' ? 'Claim status' : f === 'eligibility_priorauth' ? 'Eligibility + PA' : 'Billing / refund'
+}
 
 function HealthBar({ val }: { val: number }) {
   const color = val >= 80 ? '#166534' : val >= 60 ? '#C49E62' : '#B91C1C'
@@ -49,43 +46,44 @@ function Pill({ label, color, bg }: { label: string; color: string; bg: string }
 function PortfolioContent() {
   const router = useRouter()
   const [q, setQ] = useState('')
-  const [filter, setFilter] = useState('All')
+  const [filter, setFilter] = useState<'All' | 'Priority' | 'At-risk' | 'Claim status' | 'Eligibility + PA' | 'Billing / refund'>('All')
   const [sort, setSort] = useState('health')
 
   const filtered = useMemo(() => {
-    let list = PORTFOLIO_CUSTOMERS.filter(c => {
-      if (q && !c.name.toLowerCase().includes(q.toLowerCase())) return false
+    let list = CUSTOMERS.filter(c => {
+      if (q && !(c.name.toLowerCase().includes(q.toLowerCase()) || c.memberId.toLowerCase().includes(q.toLowerCase()) || c.phoneDisplay.includes(q))) return false
       if (filter === 'Priority') return c.tier === 'Priority'
-      if (filter === 'At-risk') return c.health < 60
-      if (filter === 'Providers') return c.segment === 'Provider'
+      if (filter === 'At-risk') return c.healthScore < 60
+      if (filter === 'Claim status') return c.flow === 'claim_status'
+      if (filter === 'Eligibility + PA') return c.flow === 'eligibility_priorauth'
+      if (filter === 'Billing / refund') return c.flow === 'billing_refund'
       return true
     })
-    if (sort === 'health') list = [...list].sort((a, b) => a.health - b.health)
-    else if (sort === 'aum') list = [...list].sort((a, b) => b.aum - a.aum)
-    else if (sort === 'revenue') list = [...list].sort((a, b) => b.revenue - a.revenue)
-    else if (sort === 'name') list = [...list].sort((a, b) => a.name.localeCompare(b.name))
+    if (sort === 'health') list = [...list].sort((a, b) => a.healthScore - b.healthScore)
+    else if (sort === 'value') list = [...list].sort((a, b) => totalBilled(b) - totalBilled(a))
+    else if (sort === 'name') list = [...list].sort((a, b) => a.lastName.localeCompare(b.lastName))
     return list
   }, [q, filter, sort])
 
-  const atRisk = PORTFOLIO_CUSTOMERS.filter(c => c.health < 60).length
-  const tier1 = PORTFOLIO_CUSTOMERS.filter(c => c.tier === 'Priority').length
-  const totalAum = PORTFOLIO_CUSTOMERS.reduce((s, c) => s + c.aum, 0)
+  const atRisk = CUSTOMERS.filter(c => c.healthScore < 60).length
+  const priority = CUSTOMERS.filter(c => c.tier === 'Priority').length
+  const totalCaseValue = CUSTOMERS.reduce((s, c) => s + totalBilled(c), 0)
 
   const kpis = [
-    { label: 'Active cases',       value: '47' },
-    { label: 'Annual case value',  value: `$${(totalAum * 100).toFixed(0)}K` },
-    { label: 'Priority members',   value: String(tier1) },
-    { label: 'At-risk',            value: String(atRisk) },
+    { label: 'Active cases',      value: String(CUSTOMERS.length) },
+    { label: 'Annual case value', value: `$${(totalCaseValue / 1000).toFixed(1)}K` },
+    { label: 'Priority members',  value: String(priority) },
+    { label: 'At-risk',           value: String(atRisk) },
   ]
 
-  const FILTER_TABS = ['All', 'Priority', 'At-risk', 'Providers']
+  const FILTER_TABS = ['All', 'Priority', 'At-risk', 'Claim status', 'Eligibility + PA', 'Billing / refund'] as const
 
   return (
     <div className="anim-fade" style={{ padding: '32px', maxWidth: 1400, margin: '0 auto' }}>
       {/* Header */}
       <div style={{ marginBottom: 28 }}>
         <div style={{ fontFamily: "'JetBrains Mono','SF Mono',ui-monospace,monospace", fontSize: 10.5, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-tertiary)', marginBottom: 10 }}>
-          CASELOAD · 47 ACTIVE
+          CASELOAD · {CUSTOMERS.length} ACTIVE
         </div>
         <h1 className="font-serif" style={{ fontSize: 38, fontWeight: 400, lineHeight: 1.15, color: 'var(--text-primary)', margin: 0 }}>
           Your <em style={{ fontStyle: 'italic', color: 'var(--ah-emerald)' }}>caseload</em>, today.
@@ -109,11 +107,11 @@ function PortfolioContent() {
           <input
             value={q}
             onChange={e => setQ(e.target.value)}
-            placeholder="Search patients, providers, groups…"
+            placeholder="Search name, member ID, phone…"
             style={{ width: '100%', height: 34, paddingLeft: 32, paddingRight: 12, borderRadius: 8, border: '1px solid var(--border-default)', background: 'var(--bg-card)', fontSize: 13, outline: 0, color: 'var(--text-primary)' }}
           />
         </div>
-        <div style={{ display: 'flex', gap: 4, background: 'var(--bg-subtle)', borderRadius: 8, padding: 3 }}>
+        <div style={{ display: 'flex', gap: 4, background: 'var(--bg-subtle)', borderRadius: 8, padding: 3, flexWrap: 'wrap' }}>
           {FILTER_TABS.map(t => (
             <button
               key={t}
@@ -128,38 +126,40 @@ function PortfolioContent() {
           style={{ height: 34, padding: '0 10px', borderRadius: 8, border: '1px solid var(--border-default)', background: 'var(--bg-card)', fontSize: 13, color: 'var(--text-primary)', cursor: 'pointer', fontFamily: 'inherit', outline: 0 }}
         >
           <option value="health">Sort: Health (worst first)</option>
-          <option value="aum">Sort: Case value (highest first)</option>
-          <option value="revenue">Sort: Revenue (highest first)</option>
+          <option value="value">Sort: Case value (highest first)</option>
           <option value="name">Sort: Name A–Z</option>
         </select>
       </div>
 
       {/* Table */}
       <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: 10, overflow: 'hidden' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 110px 90px 90px 90px 120px 1fr', gap: 0, padding: '10px 18px', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-subtle)' }}>
-          {['Customer', 'Segment', 'Tier', 'Revenue', 'Case value', 'Health', 'Next action'].map(h => (
+        <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 110px 90px 110px 130px 120px 1.6fr', gap: 0, padding: '10px 18px', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-subtle)' }}>
+          {['Member', 'Segment', 'Tier', 'Plan', 'Flow', 'Health', 'Next action'].map(h => (
             <div key={h} style={{ fontFamily: "'JetBrains Mono','SF Mono',ui-monospace,monospace", fontSize: 10, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-tertiary)' }}>{h}</div>
           ))}
         </div>
         {filtered.map((c, i) => (
           <div
-            key={c.id}
+            key={c.memberId}
             className="row-hover"
-            onClick={() => router.push(`/portfolio/${c.id}`)}
-            style={{ display: 'grid', gridTemplateColumns: '1fr 110px 90px 90px 90px 120px 1fr', gap: 0, padding: '13px 18px', borderTop: i === 0 ? 'none' : '1px solid var(--border-subtle)', cursor: 'pointer', transition: 'background 100ms ease', alignItems: 'center' }}
+            onClick={() => router.push(`/portfolio/${c.memberId}`)}
+            style={{ display: 'grid', gridTemplateColumns: '1.4fr 110px 90px 110px 130px 120px 1.6fr', gap: 0, padding: '13px 18px', borderTop: i === 0 ? 'none' : '1px solid var(--border-subtle)', cursor: 'pointer', transition: 'background 100ms ease', alignItems: 'center' }}
           >
-            <div style={{ fontSize: 13.5, fontWeight: 500, color: 'var(--text-primary)' }}>{c.name}</div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 13.5, fontWeight: 500, color: 'var(--text-primary)' }}>{c.lastName}, {c.firstName.charAt(0)}.</div>
+              <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10.5, color: 'var(--text-tertiary)', marginTop: 2 }}>{c.memberId} · {c.phoneDisplay}</div>
+            </div>
             <div style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>{c.segment}</div>
             <div>
               {c.tier === 'Priority'
                 ? <Pill label="Priority" color="var(--ah-deep)" bg="rgba(59,86,183,0.12)" />
                 : <Pill label="Standard" color="var(--text-tertiary)" bg="var(--bg-subtle)" />}
             </div>
-            <div className="num" style={{ fontSize: 13, color: 'var(--text-primary)' }}>${c.revenue}K</div>
-            <div className="num" style={{ fontSize: 13, color: 'var(--text-primary)' }}>${(c.aum * 10).toFixed(0)}K</div>
-            <HealthBar val={c.health} />
+            <div style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>{c.planType}</div>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{flowLabel(c.flow)}</div>
+            <HealthBar val={c.healthScore} />
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 12.5, fontStyle: c.health < 60 ? 'italic' : 'normal', color: c.health < 60 ? 'var(--danger)' : 'var(--text-secondary)', flex: 1 }}>{c.nextAction}</span>
+              <span style={{ fontSize: 12.5, fontStyle: c.healthScore < 60 ? 'italic' : 'normal', color: c.healthScore < 60 ? 'var(--danger)' : 'var(--text-secondary)', flex: 1 }}>{nextActionFor(c)}</span>
             </div>
           </div>
         ))}
@@ -170,7 +170,7 @@ function PortfolioContent() {
 
       {/* Footer */}
       <div style={{ marginTop: 16, fontSize: 12.5, color: 'var(--text-tertiary)', fontFamily: "'JetBrains Mono','SF Mono',ui-monospace,monospace" }}>
-        Showing {filtered.length} of 47 · click any row to open the case detail.
+        Showing {filtered.length} of {CUSTOMERS.length} · click any row to open the case detail · same roster as Live Call Assist
       </div>
     </div>
   )

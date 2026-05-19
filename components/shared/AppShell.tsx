@@ -24,15 +24,18 @@ const NAV_SECTIONS: NavSection[] = [
       { id: 'debrief',     label: 'Daily Debrief',      icon: 'Moon',       path: '/daily-debrief' },
       { id: 'voice',       label: 'Live Call Assist',   icon: 'Mic',        path: '/voice-intelligence' },
       { id: 'avatar',      label: 'Patient Avatar',     icon: 'UserCircle', path: '/meeting-avatar' },
-      { id: 'ai-agents',   label: 'AI Agents',          icon: 'Bot',        path: '/ai-agents',
-        children: [
-          { id: 'pitch-builder',     label: 'Benefits Pitch Builder',  path: '/ai-agents/pitch-builder' },
-          { id: 'meeting-preparer',  label: 'Meeting Preparer',        path: '/ai-agents/meeting-preparer' },
-          { id: 'earnings-reviewer', label: 'Denials Reviewer',        path: '/ai-agents/earnings-reviewer' },
-          { id: 'model-builder',     label: 'Coverage Planner',        path: '/ai-agents/model-builder' },
-          { id: 'memo-maker',        label: 'Appeal Drafter',          path: '/ai-agents/memo-maker' },
-        ],
-      },
+      // AI Agents temporarily hidden — backend agent runtimes not yet wired for
+      // the healthcare demo. Restore this block when AgentCore ARNs in
+      // app/api/agents/invoke/route.ts are updated.
+      // { id: 'ai-agents',   label: 'AI Agents',          icon: 'Bot',        path: '/ai-agents',
+      //   children: [
+      //     { id: 'pitch-builder',     label: 'Benefits Pitch Builder',  path: '/ai-agents/pitch-builder' },
+      //     { id: 'meeting-preparer',  label: 'Meeting Preparer',        path: '/ai-agents/meeting-preparer' },
+      //     { id: 'earnings-reviewer', label: 'Denials Reviewer',        path: '/ai-agents/earnings-reviewer' },
+      //     { id: 'model-builder',     label: 'Coverage Planner',        path: '/ai-agents/model-builder' },
+      //     { id: 'memo-maker',        label: 'Appeal Drafter',          path: '/ai-agents/memo-maker' },
+      //   ],
+      // },
     ],
   },
   {

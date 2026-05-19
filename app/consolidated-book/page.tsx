@@ -6,10 +6,10 @@ import { Icon } from '@/components/ui/Icon'
 
 // MOCK ONLY — no real PHI. Aggregate caseload book for Access Health demo.
 const SEGMENTS = [
-  { label: 'Individual members', aum: 38.4, color: '#56BB64' },
-  { label: 'Family plans',       aum: 22.1, color: '#52B960' },
-  { label: 'Group plans',        aum: 14.2, color: '#86C98F' },
-  { label: 'Providers',          aum: 9.5,  color: '#B8D8BC' },
+  { label: 'Individual members', aum: 38.4, color: '#3B56B7' }, // Sapphire
+  { label: 'Family plans',       aum: 22.1, color: '#1E3082' }, // True Cobalt
+  { label: 'Group plans',        aum: 14.2, color: '#9C8387' }, // Taupe
+  { label: 'Providers',          aum:  9.5, color: '#131F53' }, // Deep Navy
 ]
 
 const EXPOSURE = [

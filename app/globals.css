@@ -2,12 +2,16 @@
 @import "tailwindcss";
 
 :root {
-  /* Brand — Access Health palette */
-  --ah-emerald: #56BB64;
-  --ah-moss: #52B960;
-  --ah-celadon: #B8D8BC;
-  --ah-white: #FEFEFE;
-  --ah-deep: #2F7A38;
+  /* Brand — Access Health palette (navy/cobalt — replaces earlier green palette).
+     Token names kept as ah-emerald/moss/etc. to avoid sweeping every component;
+     values now point at the navy palette: Sapphire, True Cobalt, Ghost White,
+     Deep Navy, plus the new Taupe accent. */
+  --ah-emerald: #3B56B7;  /* Sapphire — bright accent (was Emerald #3B56B7) */
+  --ah-moss:    #1E3082;  /* True Cobalt — primary brand (was Moss #1E3082) */
+  --ah-celadon: #E5E6ED;  /* Ghost White — light tint (was Celadon #E5E6ED) */
+  --ah-white:   #FEFEFE;  /* unchanged */
+  --ah-deep:    #131F53;  /* Deep Navy — darkest (was Deep #131F53) */
+  --ah-taupe:   #9C8387;  /* Taupe — secondary accent (new) */
   /* Legacy aliases (used widely in components) */
   --idfc-red: var(--ah-moss);
   --idfc-red-deep: var(--ah-deep);
@@ -19,8 +23,8 @@
   --sb-text: #C8C2BB;
   --sb-text-strong: #EDE8E1;
   --sb-text-muted: rgba(200,194,187,0.45);
-  --sb-active-bg: rgba(82,185,96,0.14);
-  --sb-active-border: #56BB64;
+  --sb-active-bg: rgba(59,86,183,0.18);  /* Sapphire 18% */
+  --sb-active-border: #3B56B7;           /* Sapphire */
 
   /* Canvas */
   --bg-canvas: #FAFAF8;
@@ -175,7 +179,7 @@ body {
   transition: background 100ms ease; border-left: 2px solid transparent;
 }
 .nav-item:hover { background: var(--bg-card); color: var(--text-primary); }
-.nav-item.active { color: var(--ah-moss); border-left-color: var(--ah-moss); background: rgba(82,185,96,0.08); font-weight: 500; }
+.nav-item.active { color: var(--ah-moss); border-left-color: var(--ah-moss); background: rgba(30,48,130,0.10); font-weight: 500; }
 
 /* Tab */
 .tab {

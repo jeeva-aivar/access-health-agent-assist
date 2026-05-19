@@ -152,7 +152,7 @@ function PortfolioContent() {
             <div style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>{c.segment}</div>
             <div>
               {c.tier === 'Priority'
-                ? <Pill label="Priority" color="var(--ah-deep)" bg="rgba(86,187,100,0.12)" />
+                ? <Pill label="Priority" color="var(--ah-deep)" bg="rgba(59,86,183,0.12)" />
                 : <Pill label="Standard" color="var(--text-tertiary)" bg="var(--bg-subtle)" />}
             </div>
             <div className="num" style={{ fontSize: 13, color: 'var(--text-primary)' }}>${c.revenue}K</div>

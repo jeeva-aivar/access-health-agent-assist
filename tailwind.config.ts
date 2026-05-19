@@ -13,6 +13,7 @@ const config: Config = {
         "ah-moss": "var(--ah-moss)",
         "ah-celadon": "var(--ah-celadon)",
         "ah-deep": "var(--ah-deep)",
+        "ah-taupe": "var(--ah-taupe)",
         "idfc-red": "var(--idfc-red)",
         "idfc-red-deep": "var(--idfc-red-deep)",
         "idfc-red-bright": "var(--idfc-red-bright)",

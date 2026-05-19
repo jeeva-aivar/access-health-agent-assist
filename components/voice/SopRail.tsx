@@ -10,8 +10,8 @@ interface Props {
 }
 
 const STATUS_STYLE = {
-  done:    { bg: 'rgba(82,185,96,0.10)',  border: '#52B960', text: '#2F7A38', label: 'Done' },
-  current: { bg: 'rgba(86,187,100,0.18)', border: '#56BB64', text: '#1F5E2A', label: 'Current' },
+  done:    { bg: 'rgba(30,48,130,0.10)',  border: '#1E3082', text: '#131F53', label: 'Done' },
+  current: { bg: 'rgba(59,86,183,0.18)', border: '#3B56B7', text: '#1F5E2A', label: 'Current' },
   pending: { bg: 'var(--bg-subtle)',      border: 'var(--border-subtle)', text: 'var(--text-tertiary)', label: 'Pending' },
 } as const
 
@@ -53,7 +53,7 @@ export function SopRail({ workflow = DEFAULT_WORKFLOW, state, latestSuggestion }
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <div style={{
                   width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
-                  background: status === 'done' ? '#52B960' : status === 'current' ? '#56BB64' : 'transparent',
+                  background: status === 'done' ? '#1E3082' : status === 'current' ? '#3B56B7' : 'transparent',
                   border: status === 'pending' ? `1.5px solid ${style.border}` : 'none',
                   display: 'grid', placeItems: 'center',
                   color: '#fff', fontFamily: "'JetBrains Mono',monospace", fontSize: 10, fontWeight: 700,
@@ -83,7 +83,7 @@ export function SopRail({ workflow = DEFAULT_WORKFLOW, state, latestSuggestion }
               {isCurrent && latestSuggestion?.text && (
                 <div style={{
                   marginTop: 8, padding: '8px 10px', borderRadius: 6,
-                  background: 'rgba(86,187,100,0.10)', border: '1px solid rgba(86,187,100,0.3)',
+                  background: 'rgba(59,86,183,0.10)', border: '1px solid rgba(59,86,183,0.3)',
                 }}>
                   <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ah-deep)', marginBottom: 4 }}>
                     ◆ AI · suggested next line

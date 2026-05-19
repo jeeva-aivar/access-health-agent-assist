@@ -6,8 +6,8 @@ import { Icon } from '@/components/ui/Icon'
 
 const TODAY_MEETINGS = [
   { id: 1, time: '08:45', duration: '15m', title: 'Hub huddle',                              with: 'Michael Reed',          type: 'In-person',   link: '', score: 38, reason: 'Routine standup — low information density for you.' },
-  { id: 2, time: '09:30', duration: '30m', title: 'Prior-auth call · Anderson, M.',          with: 'Michael Anderson',      type: 'Call',        link: '', score: 92, reason: 'High-value member call — your presence required.' },
-  { id: 3, time: '11:00', duration: '45m', title: 'Denials committee',                       with: 'Hub team',              type: 'In-person',   link: '', score: 87, reason: 'Key decision gate — your input needed on the Patel case.' },
+  { id: 2, time: '09:30', duration: '30m', title: 'Prior-auth call · Iyer, M.',          with: 'Vishnu Iyer',      type: 'Call',        link: '', score: 92, reason: 'High-value member call — your presence required.' },
+  { id: 3, time: '11:00', duration: '45m', title: 'Denials committee',                       with: 'Hub team',              type: 'In-person',   link: '', score: 87, reason: 'Key decision gate — your input needed on the Verma case.' },
   { id: 4, time: '11:00', duration: '30m', title: 'Hub standup',                             with: 'Ops team',              type: 'Google Meet', link: 'https://meet.google.com/abc-defg-hij', score: 44, reason: 'Status round — avatar can take notes and debrief you.' },
   { id: 5, time: '14:00', duration: '60m', title: 'Quarterly review · Davis & Park',         with: 'Davis & Park practice', type: 'Google Meet', link: 'https://meet.google.com/mse-cjyq-rsr', score: 71, reason: 'Provider contract review — avatar can attend and surface action items.' },
   { id: 6, time: '15:00', duration: '45m', title: 'Q4 caseload sign-off',                    with: 'Internal',              type: 'Teams',       link: 'https://teams.microsoft.com/l/meetup-join/abc123', score: 55, reason: 'Doc review — avatar can capture decisions and draft memo.' },

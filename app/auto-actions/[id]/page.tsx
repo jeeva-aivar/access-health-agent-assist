@@ -111,7 +111,7 @@ function RelatedCard({ title, badge, time, detail }: { title: string; badge: Bad
 function getExtended(id: string) {
   const base: Record<string, any> = {
     c0: {
-      customer: { name: 'Baylor Scott & White', cif: 'PRV-BSW-002291', segment: 'Provider', tier: 'Priority', health: 91, aum: '$1.2M/yr', since: '2019', rm: 'Jane Doe', city: 'Dallas, TX', lastContact: '18 May 2026', openDeals: 4 },
+      customer: { name: 'Baylor Scott & White', cif: 'PRV-BSW-002291', segment: 'Provider', tier: 'Priority', health: 91, aum: '$1.2M/yr', since: '2019', rm: 'Afsheen Mohammed', city: 'Dallas, TX', lastContact: '18 May 2026', openDeals: 4 },
       compliance: { overall: 'PASS', items: [
         { text: 'Provider is contracted (effective through Dec 2026)', pass: true },
         { text: 'HIPAA · minimum-necessary records handling confirmed', pass: true },
@@ -129,12 +129,12 @@ function getExtended(id: string) {
         { time: '04:12', actor: 'AI', action: 'EHR updated', detail: 'Epic: interaction logged on CLM-9047, status updated to "Records received", next action set for 22 May.' },
       ],
       related: [
-        { title: 'Eligibility verification · Anderson, M.', badge: 'DONE' as Badge, time: '03:40', detail: 'Eligibility valid — no action needed before adjudication.' },
+        { title: 'Eligibility verification · Iyer, M.', badge: 'DONE' as Badge, time: '03:40', detail: 'Eligibility valid — no action needed before adjudication.' },
         { title: 'Prior auth check · PA-77310', badge: 'READY' as Badge, time: 'Yesterday', detail: 'Approved record on file — claim can proceed.' },
       ],
     },
     c1: {
-      customer: { name: 'Lopez, S.', cif: 'MEM-LPZ-3318-2204', segment: 'Individual', tier: 'Standard', health: 67, aum: '$24K/yr', since: '2023', rm: 'Jane Doe', city: 'Houston, TX', lastContact: '17 May 2026', openDeals: 1 },
+      customer: { name: 'Sharma, S.', cif: 'MEM-LPZ-3318-2204', segment: 'Individual', tier: 'Standard', health: 67, aum: '$24K/yr', since: '2023', rm: 'Afsheen Mohammed', city: 'Houston, TX', lastContact: '17 May 2026', openDeals: 1 },
       compliance: { overall: 'HOLD', items: [
         { text: 'Member eligibility-compliant (valid until Aug 2026)', pass: true },
         { text: 'HIPAA · 3-ID verification completed earlier', pass: true },
@@ -144,11 +144,11 @@ function getExtended(id: string) {
         { text: 'Recommend human review before sending', pass: false },
       ]},
       audit: [
-        { time: '05:31', actor: 'Email gateway', action: 'Inbound email received', detail: 'Sarah Lopez asked for appeal window on denied claim CLM-8902 (denial code N290).' },
+        { time: '05:31', actor: 'Email gateway', action: 'Inbound email received', detail: 'Jeeva Sharma asked for appeal window on denied claim CLM-8902 (denial code N290).' },
         { time: '05:32', actor: 'AI', action: 'Intent detection', detail: 'Intent: appeal-window inquiry. Sensitivity flag triggered — TX-specific timing rule applies.' },
         { time: '05:33', actor: 'AI', action: 'KB lookup', detail: 'Pulled appeal-window article KB-AH-APL-002. State-specific timing must be confirmed by agent.' },
         { time: '05:45', actor: 'AI', action: 'Draft composed', detail: 'Empathetic reply drafted with appeal options. OOP-max context included.' },
-        { time: '05:48', actor: 'AI', action: 'Held for review', detail: 'Auto-send suspended. Flagged for Jane Doe review at 09:15 briefing.' },
+        { time: '05:48', actor: 'AI', action: 'Held for review', detail: 'Auto-send suspended. Flagged for Afsheen Mohammed review at 09:15 briefing.' },
       ],
       related: [
         { title: 'Claim CLM-8902 · denied (N290)', badge: 'FLAGGED' as Badge, time: '2 days ago', detail: 'Denial received — appeal options to be confirmed.' },
@@ -156,7 +156,7 @@ function getExtended(id: string) {
       ],
     },
     s2: {
-      customer: { name: 'Patel, R.', cif: 'MEM-PTL-8831-4012', segment: 'Individual', tier: 'Standard', health: 43, aum: '$18K/yr', since: '2022', rm: 'Jane Doe', city: 'Plano, TX', lastContact: '15 May 2026', openDeals: 0 },
+      customer: { name: 'Verma, R.', cif: 'MEM-PTL-8831-4012', segment: 'Individual', tier: 'Standard', health: 43, aum: '$18K/yr', since: '2022', rm: 'Afsheen Mohammed', city: 'Plano, TX', lastContact: '15 May 2026', openDeals: 0 },
       compliance: { overall: 'RISK', items: [
         { text: 'Eligibility expiry: 21 May 2026 — breach in 48 hrs', pass: false },
         { text: 'Member unreachable for 4 consecutive days', pass: false },
@@ -172,12 +172,12 @@ function getExtended(id: string) {
         { time: '06:02', actor: 'AI', action: 'Reassignment proposed', detail: 'Aaron Kim identified as best alternate agent (lower workload, faster close rate). Pending approval.' },
       ],
       related: [
-        { title: 'Eligibility reminder #1 · Patel', badge: 'SENT' as Badge, time: '13 May', detail: 'First automated reminder — no response.' },
-        { title: 'Eligibility reminder #2 · Patel', badge: 'SENT' as Badge, time: '15 May', detail: 'Second reminder sent — no response.' },
+        { title: 'Eligibility reminder #1 · Verma', badge: 'SENT' as Badge, time: '13 May', detail: 'First automated reminder — no response.' },
+        { title: 'Eligibility reminder #2 · Verma', badge: 'SENT' as Badge, time: '15 May', detail: 'Second reminder sent — no response.' },
       ],
     },
     s3: {
-      customer: { name: 'Garcia family', cif: 'MEM-GAR-7731-2204', segment: 'Family', tier: 'Priority', health: 88, aum: '$36K/yr', since: '2022', rm: 'Jane Doe', city: 'Houston, TX', lastContact: '17 May 2026', openDeals: 1 },
+      customer: { name: 'Garcia family', cif: 'MEM-GAR-7731-2204', segment: 'Family', tier: 'Priority', health: 88, aum: '$36K/yr', since: '2022', rm: 'Afsheen Mohammed', city: 'Houston, TX', lastContact: '17 May 2026', openDeals: 1 },
       compliance: { overall: 'PASS', items: [
         { text: 'Eligibility valid until Feb 2027', pass: true },
         { text: 'Member-event-triggered offer (deductible reset) — within outreach policy', pass: true },
@@ -189,7 +189,7 @@ function getExtended(id: string) {
         { time: '05:50', actor: 'AI', action: 'Deductible reset detected', detail: 'Family annual deductible reset 14 May. NBA engine triggered for supplemental rider offer.' },
         { time: '05:51', actor: 'AI', action: 'Member profile scored', detail: 'Supplemental fit score: 87/100. Family size + utilization pattern flagged as viable.' },
         { time: '05:55', actor: 'AI', action: 'Prep pack generated', detail: 'Supplemental fit brief: 5 slides, bilingual Spanish copy included.' },
-        { time: '06:24', actor: 'AI', action: 'Opportunity flagged', detail: 'Flagged for Jane Doe action. Priority: high (4-week window).' },
+        { time: '06:24', actor: 'AI', action: 'Opportunity flagged', detail: 'Flagged for Afsheen Mohammed action. Priority: high (4-week window).' },
       ],
       related: [
         { title: 'Benefits walk · Garcia family', badge: 'REVIEW' as Badge, time: '25 Apr', detail: 'Previous walk — family asked about pediatric coverage.' },
@@ -199,7 +199,7 @@ function getExtended(id: string) {
   }
 
   return base[id] ?? {
-    customer: { name: 'Customer', cif: '—', segment: '—', tier: '—', health: 70, aum: '—', since: '—', rm: 'Jane Doe', city: '—', lastContact: '—', openDeals: 0 },
+    customer: { name: 'Customer', cif: '—', segment: '—', tier: '—', health: 70, aum: '—', since: '—', rm: 'Afsheen Mohammed', city: '—', lastContact: '—', openDeals: 0 },
     compliance: { overall: 'PASS', items: [
       { text: 'Eligibility status verified', pass: true },
       { text: 'No HIPAA flags', pass: true },

@@ -55,15 +55,15 @@ const NAV_SECTIONS: NavSection[] = [
 
 const NOTIFICATIONS = [
   { t: '2 min ago',  title: 'Supervisor aligned on stack',  detail: 'All 4 priorities locked for the shift.',                tone: 'success' },
-  { t: '18 min ago', title: 'SLA risk · Anderson auth',     detail: 'Prior-auth status overdue — review queued.',           tone: 'warning' },
+  { t: '18 min ago', title: 'SLA risk · Iyer auth',     detail: 'Prior-auth status overdue — review queued.',           tone: 'warning' },
   { t: '1 hr ago',   title: 'Sentiment swing · Garcia',     detail: '+18 pts after benefits clarification.',                tone: 'info' },
-  { t: '3 hr ago',   title: 'Patel records received',       detail: 'Medical records auto-attached to case.',                tone: 'success' },
+  { t: '3 hr ago',   title: 'Verma records received',       detail: 'Medical records auto-attached to case.',                tone: 'success' },
 ]
 
 const SEARCH_RESULTS = [
-  { kind: 'Patient',  label: 'Anderson, M. · Prior-auth pending',         icon: 'User' },
+  { kind: 'Patient',  label: 'Iyer, M. · Prior-auth pending',         icon: 'User' },
   { kind: 'Patient',  label: 'Garcia family · Eligibility · Cigna',       icon: 'User' },
-  { kind: 'Patient',  label: 'Patel, R. · Claim resubmission Q4',         icon: 'User' },
+  { kind: 'Patient',  label: 'Verma, R. · Claim resubmission Q4',         icon: 'User' },
   { kind: 'Task',     label: 'Q4 caseload review · sign-off',             icon: 'ListChecks' },
   { kind: 'Doc',      label: 'Eligibility verification SOP v3.1',          icon: 'FileText' },
   { kind: 'Doc',      label: 'Claims denial appeal pre-read · 12 pages',  icon: 'FileText' },
@@ -97,7 +97,7 @@ function ProfileBlade({ open, onClose }: { open: boolean; onClose: () => void })
         </div>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <KV k="Email"          v="jane.doe@accesshealthcare.com" />
+        <KV k="Email"          v="afsheen.mohammed@accesshealthcare.com" />
         <KV k="Mobile"         v="+1 (555) ••• ••89" />
         <KV k="Location"       v="Dallas Hub · Floor 3" />
         <KV k="Reports to"     v="Michael Reed · Team Lead" />
@@ -336,7 +336,7 @@ function Topbar({ title, sidebarW }: { title: string; sidebarW: number }) {
                   <div className="avatar" style={{ width: 40, height: 40, fontSize: 14 }}>{MOCK.rm.initials}</div>
                   <div>
                     <div style={{ fontSize: 14, fontWeight: 600 }}>{MOCK.rm.name}</div>
-                    <div className="caption" style={{ fontSize: 10.5, textTransform: 'none', letterSpacing: 0, color: 'var(--text-tertiary)' }}>jane.doe@accesshealthcare · Agent</div>
+                    <div className="caption" style={{ fontSize: 10.5, textTransform: 'none', letterSpacing: 0, color: 'var(--text-tertiary)' }}>afsheen.mohammed@accesshealthcare · Agent</div>
                   </div>
                 </div>
                 {[

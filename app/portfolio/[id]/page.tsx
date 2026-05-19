@@ -153,7 +153,7 @@ function toDetailView(c: Customer): DetailView {
     tier: c.tier,
     city: `${c.city}, ${c.state}`,
     name: `${c.firstName} ${c.lastName}`,
-    rm: 'Jane Doe',
+    rm: 'Afsheen Mohammed',
     since: c.memberSince.slice(0, 4),
     industry: c.planName,
     phone: c.phoneDisplay,

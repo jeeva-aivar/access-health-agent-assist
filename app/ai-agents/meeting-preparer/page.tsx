@@ -16,7 +16,7 @@ export default function MeetingPreparerPage() {
   const [purpose, setPurpose] = useState('benefits_walkthrough')
   const [depth, setDepth] = useState('detailed')
   const [include, setInclude] = useState(['plan_snapshot', 'last_call_notes', 'open_claims', 'care_context', 'hipaa_flags'])
-  const [attendeeName, setAttendeeName] = useState('Michael Anderson')
+  const [attendeeName, setAttendeeName] = useState('Vishnu Iyer')
   const [attendeeRole, setAttendeeRole] = useState('Member')
 
   const buildPayload = () => {
@@ -29,7 +29,7 @@ export default function MeetingPreparerPage() {
         duration_min: Number(duration), channel,
         attendees: [
           ...(attendeeName ? [{ name: attendeeName, role: attendeeRole, side: 'member' }] : []),
-          { name: 'Jane Doe', role: 'Agent', side: 'access_health' },
+          { name: 'Afsheen Mohammed', role: 'Agent', side: 'access_health' },
         ],
       },
       meeting_purpose: purpose, depth, include,

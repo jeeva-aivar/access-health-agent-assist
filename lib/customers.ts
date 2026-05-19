@@ -78,7 +78,7 @@ export interface Customer {
   phone: string               // E.164 — primary key
   phoneDisplay: string        // formatted for UI
   memberId: string
-  name: string                // "Mr. Michael Anderson"
+  name: string                // "Mr. Vishnu Iyer"
   firstName: string
   lastName: string
   initials: string
@@ -139,13 +139,13 @@ export interface Customer {
 // ─── 10 customer roster ───────────────────────────────────────────────────────
 
 export const CUSTOMERS: Customer[] = [
-  // 1. Michael Anderson — primary demo subject (in-review claim)
+  // 1. Vishnu Iyer (was Michael Anderson) — primary demo subject (in-review claim)
   {
     phone: '+12145550188', phoneDisplay: '+1 (214) 555-0188',
     memberId: 'ANH-2418-4421',
-    segment: 'Individual', tier: 'Priority', healthScore: 62, memberSince: '2020-03-14', name: 'Mr. Michael Anderson',
-    firstName: 'Michael', lastName: 'Anderson', initials: 'MA',
-    dob: '1978-04-14', email: 'm.anderson@example.com',
+    segment: 'Individual', tier: 'Priority', healthScore: 62, memberSince: '2020-03-14', name: 'Mr. Vishnu Iyer',
+    firstName: 'Vishnu', lastName: 'Iyer', initials: 'VI',
+    dob: '1978-04-14', email: 'vishnu.iyer@example.com',
     city: 'Dallas', state: 'TX', language: 'en',
     payer: 'BCBS TX', planName: 'BCBS TX PPO Gold', planType: 'PPO',
     groupId: 'GRP-TX-00112', effectiveDate: '2026-01-01', pcp: 'Dr. L. Okafor (Dallas Downtown)',
@@ -179,21 +179,21 @@ export const CUSTOMERS: Customer[] = [
       { date: '2026-06-04', provider: 'Dr. L. Okafor', type: 'Follow-up — back pain', status: 'scheduled' },
     ],
     callHistory: [
-      { date: '2026-05-11', channel: 'email', topic: 'Records request status', sentiment: 'neutral', outcome: 'BSW Provider Relations confirmed records sent', agent: 'Jane Doe' },
-      { date: '2026-05-04', channel: 'call', topic: 'Eligibility verify + plan walk', sentiment: 'positive', outcome: 'Confirmed PCP + copay', agent: 'Jane Doe' },
-      { date: '2026-04-14', channel: 'call', topic: 'Appeal timeline question (N290)', sentiment: 'cooling', outcome: 'Escalated to Tier-2', agent: 'Jane Doe' },
+      { date: '2026-05-11', channel: 'email', topic: 'Records request status', sentiment: 'neutral', outcome: 'BSW Provider Relations confirmed records sent', agent: 'Afsheen Mohammed' },
+      { date: '2026-05-04', channel: 'call', topic: 'Eligibility verify + plan walk', sentiment: 'positive', outcome: 'Confirmed PCP + copay', agent: 'Afsheen Mohammed' },
+      { date: '2026-04-14', channel: 'call', topic: 'Appeal timeline question (N290)', sentiment: 'cooling', outcome: 'Escalated to Tier-2', agent: 'Afsheen Mohammed' },
     ],
     arOutstanding: 362.00,
     notes: 'OOP costs sensitive — currently at OOP max for the plan year.',
   },
 
-  // 2. Sarah Lopez — denied claim with appeal options
+  // 2. Jeeva Sharma (was Sarah Lopez) — denied claim with appeal options
   {
     phone: '+17135550212', phoneDisplay: '+1 (713) 555-0212',
     memberId: 'LPZ-3318-2204',
-    segment: 'Individual', tier: 'Priority', healthScore: 38, memberSince: '2023-07-02', name: 'Ms. Sarah Lopez',
-    firstName: 'Sarah', lastName: 'Lopez', initials: 'SL',
-    dob: '1985-09-23', email: 's.lopez@example.com',
+    segment: 'Individual', tier: 'Priority', healthScore: 38, memberSince: '2023-07-02', name: 'Mr. Jeeva Sharma',
+    firstName: 'Jeeva', lastName: 'Sharma', initials: 'JS',
+    dob: '1985-09-23', email: 'jeeva.sharma@example.com',
     city: 'Houston', state: 'TX', language: 'en',
     payer: 'Aetna', planName: 'Aetna Silver HMO', planType: 'HMO',
     groupId: 'GRP-TX-00342', effectiveDate: '2025-07-01', pcp: 'Dr. R. Mahmood (Houston West)',
@@ -266,19 +266,19 @@ export const CUSTOMERS: Customer[] = [
       { date: '2026-08-15', provider: 'Dr. M. Nguyen', type: 'Annual wellness visit', status: 'scheduled' },
     ],
     callHistory: [
-      { date: '2026-05-15', channel: 'call', topic: 'EOB question (CLM-9112)', sentiment: 'neutral', outcome: 'Walked through allowed vs billed; member satisfied', agent: 'Jane Doe' },
+      { date: '2026-05-15', channel: 'call', topic: 'EOB question (CLM-9112)', sentiment: 'neutral', outcome: 'Walked through allowed vs billed; member satisfied', agent: 'Afsheen Mohammed' },
     ],
     arOutstanding: 30.00,
     notes: 'Senior member — explain plainly, avoid jargon. Allowed-vs-billed often confuses MA members.',
   },
 
-  // 4. Marcus Williams — prior auth status (anxious, day-before)
+  // 4. Muthu Krishnan (was Marcus Williams) — prior auth status (anxious, day-before)
   {
     phone: '+14045550199', phoneDisplay: '+1 (404) 555-0199',
     memberId: 'WIL-6629-1812',
-    segment: 'Individual', tier: 'Priority', healthScore: 55, memberSince: '2024-11-20', name: 'Mr. Marcus Williams',
-    firstName: 'Marcus', lastName: 'Williams', initials: 'MW',
-    dob: '1972-07-19', email: 'm.williams@example.com',
+    segment: 'Individual', tier: 'Priority', healthScore: 55, memberSince: '2024-11-20', name: 'Mr. Muthu Krishnan',
+    firstName: 'Muthu', lastName: 'Krishnan', initials: 'MK',
+    dob: '1972-07-19', email: 'muthu.krishnan@example.com',
     city: 'Atlanta', state: 'GA', language: 'en',
     payer: 'Cigna', planName: 'Cigna PPO Bronze', planType: 'PPO',
     groupId: 'GRP-GA-COKE-104', effectiveDate: '2026-01-01', pcp: 'Dr. J. Patel (Buckhead Family Med)',
@@ -293,7 +293,7 @@ export const CUSTOMERS: Customer[] = [
       priorAuthRequired: ['MRI', 'CT', 'Inpatient surgery', 'Imaging > $1500'],
       events: [
         { date: '2026-05-19', type: '270/271', result: 'Active · Bronze · deductible 70% met', source: 'Cigna EDI' },
-        { date: '2026-05-18', type: 'refresh', result: 'Eligibility refreshed pre-appointment', source: 'Jane Doe' },
+        { date: '2026-05-18', type: 'refresh', result: 'Eligibility refreshed pre-appointment', source: 'Afsheen Mohammed' },
       ],
     },
     priorAuths: [
@@ -308,7 +308,7 @@ export const CUSTOMERS: Customer[] = [
       { date: '2026-06-03', provider: 'Dr. S. Hwang', type: 'MRI review', status: 'scheduled' },
     ],
     callHistory: [
-      { date: '2026-05-19', channel: 'call', topic: 'Pre-procedure check', sentiment: 'cooling', outcome: 'In-progress — current call', agent: 'Jane Doe' },
+      { date: '2026-05-19', channel: 'call', topic: 'Pre-procedure check', sentiment: 'cooling', outcome: 'In-progress — current call', agent: 'Afsheen Mohammed' },
       { date: '2026-05-10', channel: 'portal', topic: 'PA-88421 submitted', sentiment: 'neutral', outcome: 'Auto-routed to medical-necessity review', agent: 'system' },
     ],
     arOutstanding: 0,
@@ -345,7 +345,7 @@ export const CUSTOMERS: Customer[] = [
       { date: '2026-05-26', provider: 'Dr. S. Kim', type: 'New-patient PCP visit', status: 'scheduled', notes: 'First visit on new plan.' },
     ],
     callHistory: [
-      { date: '2026-05-19', channel: 'call', topic: 'Pre-visit coverage check', sentiment: 'positive', outcome: 'In-progress — current call', agent: 'Jane Doe' },
+      { date: '2026-05-19', channel: 'call', topic: 'Pre-visit coverage check', sentiment: 'positive', outcome: 'In-progress — current call', agent: 'Afsheen Mohammed' },
     ],
     arOutstanding: 0,
     notes: 'New member — high opportunity for retention and satisfaction. PCP visit is preventive ($0 copay if coded right).',
@@ -392,13 +392,13 @@ export const CUSTOMERS: Customer[] = [
     notes: 'Refund issued via ACH (10-business-day SLA). Member can also opt for check or credit-toward-next-bill.',
   },
 
-  // 7. Aisha Patel — surprise bill / in-network dispute
+  // 7. Manish Verma (was Aisha Patel) — surprise bill / in-network dispute
   {
     phone: '+13035550155', phoneDisplay: '+1 (303) 555-0155',
     memberId: 'PTL-7723-0011',
-    segment: 'Individual', tier: 'Priority', healthScore: 42, memberSince: '2021-06-04', name: 'Ms. Aisha Patel',
-    firstName: 'Aisha', lastName: 'Patel', initials: 'AP',
-    dob: '1976-05-14', email: 'a.patel@example.com',
+    segment: 'Individual', tier: 'Priority', healthScore: 42, memberSince: '2021-06-04', name: 'Mr. Manish Verma',
+    firstName: 'Manish', lastName: 'Verma', initials: 'MV',
+    dob: '1976-05-14', email: 'manish.verma@example.com',
     city: 'Denver', state: 'CO', language: 'en',
     payer: 'Anthem', planName: 'Anthem PPO Silver', planType: 'PPO',
     groupId: 'GRP-CO-OUTDOOR-91', effectiveDate: '2025-01-01', pcp: 'Dr. C. Aguilar (Highlands Family Med)',
@@ -463,7 +463,7 @@ export const CUSTOMERS: Customer[] = [
       { date: '2026-05-02', provider: 'Dr. A. Garza', type: 'PCP visit', status: 'completed' },
     ],
     callHistory: [
-      { date: '2026-05-19', channel: 'call', topic: 'Schedule cardiology + PA', sentiment: 'neutral', outcome: 'In-progress — current call', agent: 'Jane Doe' },
+      { date: '2026-05-19', channel: 'call', topic: 'Schedule cardiology + PA', sentiment: 'neutral', outcome: 'In-progress — current call', agent: 'Afsheen Mohammed' },
       { date: '2026-05-02', channel: 'sms', topic: 'PCP referral notification', sentiment: 'neutral', outcome: 'Auto-sent referral details', agent: 'system' },
     ],
     arOutstanding: 0,
@@ -549,8 +549,8 @@ export const CUSTOMERS: Customer[] = [
       { date: '2026-06-20', provider: 'Home Health Network', type: 'Post-op PT eval', status: 'scheduled' },
     ],
     callHistory: [
-      { date: '2026-05-19', channel: 'call', topic: 'OOP projection + PA status', sentiment: 'cooling', outcome: 'In-progress — current call', agent: 'Jane Doe' },
-      { date: '2026-05-02', channel: 'call', topic: 'Pre-surgical questions', sentiment: 'neutral', outcome: 'Walked through surgical pathway', agent: 'Jane Doe' },
+      { date: '2026-05-19', channel: 'call', topic: 'OOP projection + PA status', sentiment: 'cooling', outcome: 'In-progress — current call', agent: 'Afsheen Mohammed' },
+      { date: '2026-05-02', channel: 'call', topic: 'Pre-surgical questions', sentiment: 'neutral', outcome: 'Walked through surgical pathway', agent: 'Afsheen Mohammed' },
     ],
     arOutstanding: 0,
     notes: 'Plan G covers Part B coinsurance + Part A deductible. Estimated OOP for THA: ~$240 (Part B deductible if not yet met). Reassure on coverage; loop in Care Management for post-op coordination.',
@@ -592,6 +592,6 @@ export function activeClaim(c: Customer): ClaimEntry | null {
   return c.claims[0] ?? null
 }
 
-// Default fallback customer (Anderson) — used when the WS hasn't sent a phone
+// Default fallback customer (Vishnu Iyer) — used when the WS hasn't sent a phone
 // yet, so the demo screen looks populated on first load.
 export const DEFAULT_CUSTOMER = CUSTOMERS[0]

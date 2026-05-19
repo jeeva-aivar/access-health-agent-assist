@@ -22,7 +22,7 @@ export default function LoginPage() {
   const { status } = useSession()
   const router = useRouter()
   const [step, setStep] = useState<'creds' | 'otp'>('creds')
-  const [user, setUser] = useState('jane.doe')
+  const [user, setUser] = useState('afsheen.mohammed')
   const [pwd, setPwd] = useState('')
   const [otp, setOtp] = useState(['', '', '', '', '', ''])
   const [err, setErr] = useState('')
@@ -70,7 +70,7 @@ export default function LoginPage() {
   }
 
   const useDemoCredentials = () => {
-    setUser('jane.doe')
+    setUser('afsheen.mohammed')
     setPwd('demo')
     setTimeout(() => submitCreds(), 0)
   }
@@ -123,7 +123,7 @@ export default function LoginPage() {
           {step === 'creds' && (
             <form onSubmit={submitCreds}>
               <div className="caption" style={{ color: 'rgba(255,255,255,0.65)', fontSize: 11 }}>EMPLOYEE AI WORKSPACE</div>
-              <h1 style={{ fontSize: 26, fontWeight: 600, letterSpacing: '-0.01em', marginTop: 8 }}>Welcome back, Jane</h1>
+              <h1 style={{ fontSize: 26, fontWeight: 600, letterSpacing: '-0.01em', marginTop: 8 }}>Welcome back, Afsheen</h1>
               <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', marginTop: 8 }}>Sign in to your AI workspace · Dallas Hub region</p>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 28 }}>
@@ -131,7 +131,7 @@ export default function LoginPage() {
                   <span className="caption" style={{ color: 'rgba(255,255,255,0.65)', fontSize: 10.5 }}>EMPLOYEE ID / USERNAME</span>
                   <div style={fieldWrap}>
                     <Icon name="User" size={14} style={{ color: 'rgba(255,255,255,0.6)', flexShrink: 0 }} />
-                    <input value={user} onChange={e => setUser(e.target.value)} placeholder="jane.doe" style={inputStyle} />
+                    <input value={user} onChange={e => setUser(e.target.value)} placeholder="afsheen.mohammed" style={inputStyle} />
                   </div>
                 </label>
 

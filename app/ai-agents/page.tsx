@@ -11,7 +11,7 @@ const AGENTS = [
     tagline: 'Generate tailored plan-benefit walkthroughs & talking points for member meetings',
     latency: '~53s',
     color: 'var(--ah-emerald)',
-    colorRaw: '#56BB64',
+    colorRaw: '#3B56B7',
     fields: ['Member or family', 'Plan tier & event', 'Riders in scope', 'Meeting objective'],
   },
   {

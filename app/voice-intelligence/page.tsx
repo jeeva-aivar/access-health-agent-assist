@@ -163,9 +163,9 @@ function fmtClock(ts: number) {
 const KIND_STYLE: Record<string, { bg: string; border: string; label: string }> = {
   compliance: { bg: 'rgba(220,38,38,0.06)', border: 'rgba(220,38,38,0.2)', label: 'HIPAA alert' },
   empathy:    { bg: 'rgba(59,130,246,0.06)', border: 'rgba(59,130,246,0.2)', label: 'Empathy' },
-  belief:     { bg: 'rgba(82,185,96,0.08)', border: 'rgba(82,185,96,0.25)', label: 'Consent' },
-  buying:     { bg: 'rgba(86,187,100,0.08)', border: 'rgba(86,187,100,0.28)', label: 'Escalation' },
-  general:    { bg: 'rgba(184,216,188,0.18)', border: 'rgba(184,216,188,0.45)', label: 'Suggestion' },
+  belief:     { bg: 'rgba(30,48,130,0.08)', border: 'rgba(30,48,130,0.25)', label: 'Consent' },
+  buying:     { bg: 'rgba(59,86,183,0.08)', border: 'rgba(59,86,183,0.28)', label: 'Escalation' },
+  general:    { bg: 'rgba(229,230,237,0.18)', border: 'rgba(229,230,237,0.45)', label: 'Suggestion' },
 }
 
 function SuggestionCard({ s, callStartedAt }: { s: Suggestion; callStartedAt: number | null }) {
@@ -177,7 +177,7 @@ function SuggestionCard({ s, callStartedAt }: { s: Suggestion; callStartedAt: nu
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
         <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ah-emerald)' }}>◆ Access Health AI · {style.label}</span>
         {stepIdx >= 0 && (
-          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--ah-deep)', padding: '2px 6px', borderRadius: 4, background: 'rgba(86,187,100,0.12)', border: '1px solid rgba(86,187,100,0.3)' }}>Step {stepIdx + 1}</span>
+          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--ah-deep)', padding: '2px 6px', borderRadius: 4, background: 'rgba(59,86,183,0.12)', border: '1px solid rgba(59,86,183,0.3)' }}>Step {stepIdx + 1}</span>
         )}
         {ts && <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: 'var(--text-tertiary)', marginLeft: 'auto' }}>{ts}</span>}
       </div>

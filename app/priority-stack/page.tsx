@@ -39,7 +39,7 @@ const STACK_TASKS = [
 type Task = typeof STACK_TASKS[number] & { assignedBy?: string }
 
 const SOURCE_META: Record<string, { label: string; pill: { bg: string; fg: string; bd: string } }> = {
-  ai:  { label: 'AI',    pill: { bg: 'rgba(86,187,100,0.10)', fg: 'var(--ah-deep)',                bd: 'rgba(86,187,100,0.35)' } },
+  ai:  { label: 'AI',    pill: { bg: 'rgba(59,86,183,0.10)', fg: 'var(--ah-deep)',                bd: 'rgba(59,86,183,0.35)' } },
   mgr: { label: 'MGR',   pill: { bg: '#fbf5e8',               fg: '#8a6a30',                       bd: '#e6d2ad' } },
   ad:  { label: 'ADHOC', pill: { bg: 'var(--bg-subtle)',      fg: 'var(--text-secondary)',         bd: 'var(--border-default)' } },
 }

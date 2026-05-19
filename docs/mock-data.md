@@ -29,7 +29,7 @@ Connection: `wss://<amplify-host>/api/agent/live` (proxied by Next.js to `${CONV
 
 ```ts
 type ServerEvent =
-  | { type: 'call_start';   callSid: string }
+  | { type: 'call_start';   callSid: string; phone?: string; memberId?: string }
   | { type: 'call_end';     callSid: string }
   | { type: 'partial';      label: 'CUSTOMER' | 'AGENT'; text: string }
   | { type: 'transcript';   label: 'CUSTOMER' | 'AGENT'; text: string; callOffset?: string }
@@ -56,6 +56,8 @@ type ClientCommand =
 That's the only outbound message. Everything else is server-pushed.
 
 ### Notes
+- **`phone` on `call_start` is the key UI hydration signal.** When the backend sends it (E.164, e.g. `+12145550188`), the UI looks the customer up in `lib/customers.ts` and populates the entire right-hand pane — member identity, active claim, coverage, history, compliance — automatically. If `phone` is absent, the UI keeps the default customer (Anderson) so the demo still works. If the phone is present but unknown to the roster, the UI shows a yellow banner ("Unknown caller phone — verify manually") and keeps the default. See `lib/customers.ts` for the canonical roster (10 demo members across 3 RCM flows).
+- `memberId` on `call_start` is a fallback identifier — useful when the call came in through a portal/IVR path that captured member ID instead of (or in addition to) phone. Today the UI prefers `phone`.
 - `stepId` on `assist_chunk` / `assist_done` is optional. If sent, it must be one of the SOP step IDs (`verify`, `status`, `follow_up`, `wrap`). The UI shows a "Step N" chip when present.
 - `sop_state` is optional. If the backend doesn't push it, the UI infers step state client-side from transcript text via the `completionCue` regexes (see SOP section below).
 - `kind` is the only field that styles the suggestion card (color + label). Mapping: `compliance` → HIPAA alert (red), `empathy` → blue, `belief` → Consent (moss green), `buying` → Escalation (emerald), `general` → Suggestion (neutral celadon).
@@ -172,126 +174,50 @@ This is the contract between the backend prompt and the on-screen step tracker. 
 
 ---
 
-## 4. Patient / member / provider roster (caseload)
+## 4. Caller roster — see `lib/customers.ts` (canonical)
 
-The portfolio table shows 18 cases. The first three have detail pages; the rest fall back to a generic template.
+The full demo roster lives in **`lib/customers.ts`** as a typed `CUSTOMERS: Customer[]` array. That file is the single source of truth — this section is just an at-a-glance index.
 
-### 4.1 Anderson, M. — primary demo subject (id: 1)
+**10 members keyed by E.164 phone.** When the backend sends `phone` on `call_start`, the UI calls `findByPhone(phone)` and hydrates the entire right-hand pane (Member / Claim / Coverage / History / Compliance) from the matching record. No additional fetch.
 
-| Field | Value |
-|---|---|
-| Full name | Mr. Michael R. Anderson |
-| Member ID | `ANH-2418-4421` (referred to as `MEM-ANH-2418-4421` in some forms) |
-| Date of birth | Apr 14, 1978 |
-| Group | `GRP-TX-00112` |
-| Plan | BCBS TX PPO · Gold |
-| Effective | Jan 01, 2026 |
-| PCP | Dr. L. Okafor · Dallas Downtown |
-| Mobile | +1 (214) 555-0188 |
-| Email | `m.anderson@example.com` |
-| City | Dallas, TX |
-| Segment | Individual · Priority |
-| Member since | 2020 |
-| Active claim | `CLM-9047-2206` |
-| Health score | 62 (declining 8 pts this quarter) |
-| Tags | Prior-auth pending · Appeal-eligible · Eligibility-due-Q3 |
-| Sensitivities | OOP costs sensitive — at OOP max for the plan year |
-| Contact pref | SMS + Email (no calls before 9am CT) |
+| # | Phone (E.164) | Display | Member ID | Name | Flow | Call reason |
+|---|---|---|---|---|---|---|
+| 1 | `+12145550188` | (214) 555-0188 | ANH-2418-4421 | Michael Anderson | `claim_status` | Following up on prior-auth MRI claim (in review) |
+| 2 | `+17135550212` | (713) 555-0212 | LPZ-3318-2204 | Sarah Lopez | `claim_status` | Appeal options for denied claim (code N290) |
+| 3 | `+12025550143` | (202) 555-0143 | CHN-7714-0908 | Robert Chen | `claim_status` | EOB explanation request (completed claim) |
+| 4 | `+14045550199` | (404) 555-0199 | WIL-6629-1812 | Marcus Williams | `eligibility_priorauth` | Confirm MRI prior-auth before tomorrow's appt |
+| 5 | `+16175550234` | (617) 555-0234 | OCO-4488-3306 | Jennifer O'Connor | `eligibility_priorauth` | First PCP visit — coverage check |
+| 6 | `+12065550167` | (206) 555-0167 | KIM-5512-7720 | David Kim | `billing_refund` | Refund timeline on credit balance |
+| 7 | `+13035550155` | (303) 555-0155 | PTL-7723-0011 | Aisha Patel | `billing_refund` | Surprise bill — suspected NSA case |
+| 8 | `+19155550112` | (915) 555-0112 | HRN-3344-2255 | Luis Hernandez | `eligibility_priorauth` | Schedule cardiology + start PA |
+| 9 | `+12015550178` | (201) 555-0178 | WAL-6644-1188 | Maria Walker (family) | `claim_status` | 3 repeat denials (M127 subscriber-ID mismatch) |
+| 10 | `+16025550189` | (602) 555-0189 | BRK-9911-4422 | Olivia Brooks | `eligibility_priorauth` | Pre-op OOP projection (hip arthroplasty) |
 
-#### Active claim — CLM-9047-2206
-| Field | Value |
-|---|---|
-| Status | In review |
-| Service date | Apr 22, 2026 |
-| Provider | Baylor Scott & White |
-| Service type | Outpatient · MRI lumbar |
-| CPT | 70553 (MRI brain w/o contrast — note: legacy mock data, lumbar MRI is the narrative) |
-| Billed | $3,420.00 |
-| Allowed | $1,810.00 |
-| Plan paid | $1,448.00 |
-| Patient resp. | $362.00 |
-| Pending | Awaiting provider operative report — sent Apr 28 |
-| Expected adjudication | May 22, 2026 |
-| Prior auth | `PA-77310` (approved) |
+### Three demo flows in the roster
 
-#### Claim history (Anderson)
-| Date | Claim | Service | Status |
-|---|---|---|---|
-| Apr 22, 2026 | CLM-9047 | MRI lumbar | In review |
-| Feb 09, 2026 | CLM-8821 | Office visit | Paid $40 |
-| Jan 14, 2026 | CLM-8617 | Lab panel | Paid $112 |
-| Nov 03, 2025 | CLM-8104 | Specialist visit | Paid $45 |
-| Sep 12, 2025 | CLM-7710 | Annual physical | Paid $0 (preventive) |
+| Flow | Customers | What the LLM should do |
+|---|---|---|
+| `claim_status` | 1 (in review), 2 (denied), 3 (completed), 9 (repeated denial pattern) | Standard 4-step SOP. Branch the follow-up on status: timeline for in-progress, appeal options for denied, EOB walkthrough for completed. For Walker (#9), call out the M127 root cause pattern explicitly. |
+| `eligibility_priorauth` | 4, 5, 8, 10 | Verify caller → confirm eligibility from 270/271 → state prior-auth status → schedule or inform. For Williams (#4) flag urgency (service tomorrow). For Brooks (#10) emphasize Plan G coverage = ~$240 OOP. |
+| `billing_refund` | 6 (credit balance), 7 (surprise bill) | Verify caller → look up balance/claim → explain breakdown (Kim: refund timeline; Patel: NSA dispute path). For Patel surface NSA protection — anesthesia OON at in-network facility. |
 
-### 4.2 Garcia family (id: 2)
+### Per-customer rich detail
 
-| Field | Value |
-|---|---|
-| Family name | Garcia family |
-| Member ID | `MEM-GAR-7731-2204` |
-| Primary | Luis Garcia |
-| Joint | Maria Garcia |
-| Dependents | 3 (ages 8, 12, 16) |
-| Plan | Access Health Family PPO |
-| City | Houston, TX |
-| Member since | 2022 |
-| Health score | 88 |
-| Tags | Family · 3 dependents · Supplemental fit · Bilingual |
-| Language | English / Spanish (prefers Spanish for letters) |
-| Mobile | +1 (713) 555-0212 |
-| Email | `l.garcia@example.com` |
-| Key event | Annual deductible just reset (14 May 2026) — supplemental rider opportunity |
+Each `Customer` record includes:
 
-### 4.3 Davis & Park — provider (id: 9)
+- **Identity:** phone (primary key), member ID, name, DOB, email, city/state, language
+- **Plan:** payer, plan name, plan type, group ID, effective date, PCP
+- **Eligibility:** 270/271 status, deductible/OOP progress, copay, coinsurance, services requiring prior auth, recent eligibility events
+- **Prior auths:** id, procedure, CPT, status (approved/pending/denied/expired), effective + expiry, ordering provider
+- **Claims:** id, service date, provider, service type, CPT, billed/allowed/plan-paid/patient-resp, status, denial code + reason + appeal deadline if denied, free-text notes
+- **Appointments:** scheduled/completed/no-show/cancelled with provider and type
+- **Call history:** prior contact channel + topic + sentiment + outcome + agent
+- **Balances:** outstanding AR, optional credit balance for refund flows
+- **Free-text notes:** agent-facing context (e.g., "OOP max met — appeal success means plan pays 100%")
 
-| Field | Value |
-|---|---|
-| Practice name | Davis & Park |
-| Provider ID | `PRV-DPK-9124-0006` |
-| Type | Orthopedic group · 14 providers |
-| City | Frisco, TX |
-| Contracted since | 2018 |
-| Annual contract | $480K |
-| Health score | 95 (best in caseload) |
-| Phone | +1 (469) 555-0177 |
-| Email | `contracts@davispark.example` |
-| Managing partner | Dr. Nina Davis |
-| Partner | Dr. Sam Park |
-| Practice manager | Anita Patel |
-| Open opportunity | Telemed expansion |
+### Adding a customer
 
-### 4.4 Other caseload entries (template-fallback detail)
-
-Used in the portfolio list, priority stack, and auto-actions. Each appears in some demo screen.
-
-| ID | Name | Segment | Tier | City | Notable claim / next action |
-|---|---|---|---|---|---|
-| 4 | Patel, R. | Individual | Standard | Plano, TX | Eligibility refresh due 21 May; SLA at risk |
-| 5 | Reyes Group | Group | Priority | TX | Census update window |
-| 6 | Carter family | Family | Standard | — | Eligibility overdue — reassign? |
-| 7 | Lopez, S. (Sarah) | Individual | Standard | Houston, TX | Denied claim `CLM-8902-1404` (code N290) — appeal window question |
-| 8 | Singh, H. (Harpreet) | Individual | Standard | — | Eligibility refresh sent (7 days) |
-| 10 | Baylor Scott & White | Provider | Priority | — | Records request follow-up · 9 May |
-| 11 | Robert Chen | Individual | Priority | — | Birthday — greeted today |
-| 12 | Iyer, L. | Individual | Standard | — | Plan renewal 22 May ($418/mo Gold) |
-| 13 | Anand & Sons | Group | Standard | — | Dependent enrollment · walk-in |
-| 14 | Walker family | Family | Standard | — | Eligibility · 11 days left |
-| 15 | Desai practice | Provider | Priority | — | Contract amendment delivery |
-| 16 | Kulkarni Pediatrics | Provider | Standard | — | Fee schedule review |
-| 17 | Reddy Ventures | Group | Priority | — | Quarterly check-in |
-| 18 | Bose, A. | Individual | Standard | — | Denial flagged — urgent review |
-
-### 4.5 Names that appear in ad-hoc / one-off contexts
-
-Used in priority-stack, auto-actions, etc. Not full case records.
-
-- Robert Gupta — "Urgent: claim denied at point-of-care" (ad-hoc task)
-- Kavita Sheth — EOB dispute · last 3 claims
-- Priya Bhat — internal verification reference (now relabeled "Internal verification" in priority-stack)
-- Vera Carter — SMS auto-acknowledgement
-- Nina Davis (Davis & Park) — provider contract follow-up
-
----
+Append to `CUSTOMERS` in `lib/customers.ts`. Required: unique E.164 `phone`. Everything else has fallbacks but the demo lands better with realistic detail. No code changes elsewhere — the UI hydrates from the record automatically.
 
 ## 5. Active call context (what the Live Call Assist screen displays)
 

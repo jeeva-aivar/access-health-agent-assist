@@ -4,6 +4,10 @@ import { AppShell } from '@/components/shared/AppShell'
 import { SopRail } from '@/components/voice/SopRail'
 import { DEFAULT_WORKFLOW } from '@/lib/sop-rcm'
 import { inferSopState, type SopState } from '@/lib/sop-state'
+import {
+  CUSTOMERS, DEFAULT_CUSTOMER, findByPhone, activeClaim,
+  type Customer, type ClaimEntry,
+} from '@/lib/customers'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -21,8 +25,10 @@ interface Suggestion {
 interface Turn { id: string; role: Role; text: string; partial: boolean; callOffsetMs: number }
 interface CallState { status: CallStatus; callSid: string | null; startedAt: number | null; endedAt: number | null }
 
+// ServerEvent — call_start can now carry an optional `phone` (E.164) so the
+// backend can tell the UI which member is calling. memberId is a fallback.
 type ServerEvent =
-  | { type: 'call_start'; callSid: string }
+  | { type: 'call_start'; callSid: string; phone?: string; memberId?: string }
   | { type: 'call_end'; callSid: string }
   | { type: 'partial'; label: Role; text: string }
   | { type: 'transcript'; label: Role; text: string; callOffset?: string }
@@ -41,16 +47,21 @@ interface State {
   suggestions: Record<string, Suggestion>
   askMessages: { id: string; role: 'user' | 'assistant'; text: string; done: boolean }[]
   sopFromServer: SopState | null
+  customer: Customer            // hydrated from phone on call_start (or picker)
+  unresolvedPhone: string | null  // backend sent a phone we don't recognise
 }
 
 const init: State = {
   call: { status: 'waiting', callSid: null, startedAt: null, endedAt: null },
   turns: [], partials: { CUSTOMER: '', AGENT: '' }, suggestions: {}, askMessages: [],
   sopFromServer: null,
+  customer: DEFAULT_CUSTOMER,
+  unresolvedPhone: null,
 }
 
 type Action =
-  | { type: 'reset'; callSid: string }
+  | { type: 'reset'; callSid: string; customer: Customer; unresolvedPhone: string | null }
+  | { type: 'pickCustomer'; customer: Customer }
   | { type: 'callEnd' }
   | { type: 'partial'; label: Role; text: string }
   | { type: 'turn'; label: Role; text: string }
@@ -63,7 +74,12 @@ type Action =
 
 function reducer(s: State, a: Action): State {
   switch (a.type) {
-    case 'reset': return { ...init, call: { status: 'live', callSid: a.callSid, startedAt: Date.now(), endedAt: null } }
+    case 'reset': return {
+      ...init,
+      call: { status: 'live', callSid: a.callSid, startedAt: Date.now(), endedAt: null },
+      customer: a.customer, unresolvedPhone: a.unresolvedPhone,
+    }
+    case 'pickCustomer': return { ...s, customer: a.customer, unresolvedPhone: null }
     case 'callEnd': return { ...s, call: { ...s.call, status: 'ended', endedAt: Date.now() } }
     case 'partial': return { ...s, partials: { ...s.partials, [a.label]: a.text } }
     case 'turn': {
@@ -150,22 +166,33 @@ function fmtClock(ts: number) {
   const d = new Date(ts)
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`
 }
+function fmtDate(yyyymmdd: string) {
+  const [y, m, d] = yyyymmdd.split('-')
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+  return `${months[parseInt(m, 10) - 1]} ${parseInt(d, 10)}, ${y}`
+}
+function fmtMoney(n: number) {
+  return `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+}
+function claimStatusColor(s: ClaimEntry['status']) {
+  if (s === 'paid') return '#16a34a'
+  if (s === 'denied') return '#dc2626'
+  if (s === 'in_review' || s === 'submitted') return '#d97706'
+  if (s === 'partial') return '#d97706'
+  return 'var(--text-secondary)'
+}
+function claimStatusLabel(s: ClaimEntry['status']) {
+  return { paid: 'Paid', denied: 'Denied', in_review: 'In review', submitted: 'Submitted', partial: 'Partial' }[s]
+}
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-// Healthcare-tuned suggestion kinds. Backend still sends the original keys
-// (compliance/empathy/belief/buying/general); we relabel for the RCM context.
-//   compliance → HIPAA / PHI alert  (red — status, not brand)
-//   empathy    → Empathy line       (celadon-leaning blue)
-//   belief     → Consent prompt     (moss)
-//   buying     → Escalation cue     (emerald)
-//   general    → Suggestion         (neutral)
 const KIND_STYLE: Record<string, { bg: string; border: string; label: string }> = {
   compliance: { bg: 'rgba(220,38,38,0.06)', border: 'rgba(220,38,38,0.2)', label: 'HIPAA alert' },
   empathy:    { bg: 'rgba(59,130,246,0.06)', border: 'rgba(59,130,246,0.2)', label: 'Empathy' },
   belief:     { bg: 'rgba(30,48,130,0.08)', border: 'rgba(30,48,130,0.25)', label: 'Consent' },
   buying:     { bg: 'rgba(59,86,183,0.08)', border: 'rgba(59,86,183,0.28)', label: 'Escalation' },
-  general:    { bg: 'rgba(229,230,237,0.18)', border: 'rgba(229,230,237,0.45)', label: 'Suggestion' },
+  general:    { bg: 'rgba(229,230,237,0.6)', border: 'rgba(229,230,237,1)', label: 'Suggestion' },
 }
 
 function SuggestionCard({ s, callStartedAt }: { s: Suggestion; callStartedAt: number | null }) {
@@ -195,17 +222,17 @@ function SuggestionCard({ s, callStartedAt }: { s: Suggestion; callStartedAt: nu
   )
 }
 
-function TurnRow({ turn, suggestions, callStartedAt }: { turn: Turn; suggestions: Suggestion[]; callStartedAt: number | null }) {
+function TurnRow({ turn, suggestions, callStartedAt, customer }: { turn: Turn; suggestions: Suggestion[]; callStartedAt: number | null; customer: Customer }) {
   const isCustomer = turn.role === 'CUSTOMER'
   const ts = callStartedAt ? fmtClock(callStartedAt + turn.callOffsetMs) : ''
   return (
     <div style={{ padding: '12px 0', borderBottom: '1px solid var(--border-subtle)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
         <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: isCustomer ? 'var(--ah-emerald)' : 'var(--text-secondary)' }}>
-          {isCustomer ? 'Caller · Anderson' : 'Agent · Jane'}
+          {isCustomer ? `Caller · ${customer.lastName}` : 'Agent · Jane'}
         </span>
         {ts && <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: 'var(--text-tertiary)' }}>{ts}</span>}
-        {isCustomer && <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: 'var(--text-tertiary)', marginLeft: 'auto' }}>Amazon Connect · TX bridge</span>}
+        {isCustomer && <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: 'var(--text-tertiary)', marginLeft: 'auto' }}>Amazon Connect · {customer.state} bridge</span>}
       </div>
       <p style={{ fontSize: 14.5, lineHeight: 1.55, color: 'var(--text-primary)', margin: 0 }}>{turn.text}</p>
       {suggestions.map(s => <SuggestionCard key={s.id} s={s} callStartedAt={callStartedAt} />)}
@@ -213,7 +240,10 @@ function TurnRow({ turn, suggestions, callStartedAt }: { turn: Turn; suggestions
   )
 }
 
-function TranscriptPanel({ turns, partials, suggestionsByTurn, call }: { turns: Turn[]; partials: Record<Role, string>; suggestionsByTurn: Map<number, Suggestion[]>; call: CallState }) {
+function TranscriptPanel({ turns, partials, suggestionsByTurn, call, customer, unresolvedPhone }: {
+  turns: Turn[]; partials: Record<Role, string>; suggestionsByTurn: Map<number, Suggestion[]>;
+  call: CallState; customer: Customer; unresolvedPhone: string | null;
+}) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const sentinelRef = useRef<HTMLDivElement>(null)
   const sticky = useRef(true)
@@ -229,6 +259,8 @@ function TranscriptPanel({ turns, partials, suggestionsByTurn, call }: { turns: 
 
   const isLive = call.status === 'live'
   const elapsedMs = call.startedAt ? Date.now() - call.startedAt : 0
+  const claim = activeClaim(customer)
+  const elig = customer.eligibility
 
   return (
     <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: 14, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
@@ -244,22 +276,30 @@ function TranscriptPanel({ turns, partials, suggestionsByTurn, call }: { turns: 
         </div>
       </div>
 
-      {/* Customer strip */}
+      {/* Unresolved-phone banner (rare) */}
+      {unresolvedPhone && (
+        <div style={{ padding: '8px 20px', background: 'rgba(217,119,6,0.08)', borderBottom: '1px solid rgba(217,119,6,0.25)', fontFamily: "'JetBrains Mono',monospace", fontSize: 10.5, color: '#d97706', letterSpacing: '0.06em' }}>
+          ⚠ Unknown caller phone <strong>{unresolvedPhone}</strong> — showing default customer. Verify manually or update roster.
+        </div>
+      )}
+
+      {/* Customer strip — fully driven by `customer` */}
       <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-subtle)', display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0 }}>
-        <div style={{ width: 48, height: 48, borderRadius: 10, background: 'var(--ah-emerald)', color: '#fff', display: 'grid', placeItems: 'center', fontFamily: "'Source Serif 4',Georgia,serif", fontSize: 18, fontWeight: 600, flexShrink: 0 }}>MA</div>
+        <div style={{ width: 48, height: 48, borderRadius: 10, background: 'var(--ah-emerald)', color: '#fff', display: 'grid', placeItems: 'center', fontFamily: "'Source Serif 4',Georgia,serif", fontSize: 18, fontWeight: 600, flexShrink: 0 }}>{customer.initials}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: 22, fontWeight: 500, lineHeight: 1.1, color: 'var(--text-primary)' }}>Mr. Michael Anderson</div>
+          <div style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: 22, fontWeight: 500, lineHeight: 1.1, color: 'var(--text-primary)' }}>{customer.name}</div>
           <div style={{ display: 'flex', gap: 10, marginTop: 4, fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: 'var(--text-tertiary)', flexWrap: 'wrap' }}>
-            <span><strong style={{ color: 'var(--text-secondary)' }}>Member ID</strong> ANH-2418-4421</span>
+            <span><strong style={{ color: 'var(--text-secondary)' }}>Member ID</strong> {customer.memberId}</span>
             <span>·</span>
-            <span><strong style={{ color: 'var(--text-secondary)' }}>Payer</strong> BCBS TX · PPO</span>
-            <span>·</span>
-            <span><strong style={{ color: 'var(--text-secondary)' }}>Claim</strong> CLM-9047-2206</span>
+            <span><strong style={{ color: 'var(--text-secondary)' }}>Payer</strong> {customer.payer} · {customer.planType}</span>
+            {claim && <><span>·</span><span><strong style={{ color: 'var(--text-secondary)' }}>Claim</strong> {claim.id}</span></>}
           </div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 5, flexShrink: 0 }}>
-          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9.5, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#16a34a', border: '1px solid rgba(22,163,74,0.3)', background: 'rgba(22,163,74,0.06)', padding: '3px 10px', borderRadius: 6 }}>Eligibility valid</span>
-          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9.5, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#d97706', border: '1px solid rgba(217,119,6,0.3)', background: 'rgba(217,119,6,0.06)', padding: '3px 10px', borderRadius: 6 }}>Claim under review</span>
+          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9.5, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#16a34a', border: '1px solid rgba(22,163,74,0.3)', background: 'rgba(22,163,74,0.06)', padding: '3px 10px', borderRadius: 6 }}>{elig.status === 'active' ? 'Eligibility valid' : 'Eligibility ' + elig.status}</span>
+          {claim && (
+            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9.5, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: claimStatusColor(claim.status), border: `1px solid ${claimStatusColor(claim.status)}66`, background: claimStatusColor(claim.status) === '#16a34a' ? 'rgba(22,163,74,0.06)' : 'rgba(217,119,6,0.06)', padding: '3px 10px', borderRadius: 6 }}>Claim {claimStatusLabel(claim.status)}</span>
+          )}
         </div>
       </div>
 
@@ -267,40 +307,26 @@ function TranscriptPanel({ turns, partials, suggestionsByTurn, call }: { turns: 
       <div ref={scrollRef} style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '0 20px' }}>
         {call.status === 'waiting' && turns.length === 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', padding: '28px 0' }}>
-            <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-tertiary)', marginBottom: 14 }}>TODAY&apos;S CALL QUEUE · LIVE ASSIST READY</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-              {[
-                { time: '09:30', customer: 'Michael Anderson', type: 'Claim status · CLM-9047', next: true },
-                { time: '11:00', customer: 'Sarah Lopez',      type: 'Denied claim · appeal window', next: false },
-                { time: '14:00', customer: 'David Kim',        type: 'EOB request · prior visit',    next: false },
-              ].map(c => (
-                <div key={c.time} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '11px 0', borderBottom: '1px solid var(--border-subtle)' }}>
-                  {c.next
-                    ? <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#16a34a', flexShrink: 0, boxShadow: '0 0 0 2px rgba(22,163,74,0.2)' }} />
-                    : <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--border-subtle)', flexShrink: 0 }} />
-                  }
-                  <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11.5, color: 'var(--text-secondary)', width: 42, flexShrink: 0 }}>{c.time}</span>
-                  <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text-primary)', flex: 1 }}>{c.customer}</span>
-                  <span style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>{c.type}</span>
-                  {c.next && <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#16a34a', border: '1px solid rgba(22,163,74,0.3)', background: 'rgba(22,163,74,0.06)', padding: '2px 7px', borderRadius: 4 }}>Next up</span>}
-                </div>
-              ))}
+            <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-tertiary)', marginBottom: 14 }}>CALL CONTEXT · {customer.flow.replace('_', ' / ').toUpperCase()}</div>
+            <div style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 10, padding: '14px 18px', marginBottom: 18 }}>
+              <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.55 }}><strong style={{ color: 'var(--text-primary)' }}>Call reason:</strong> {customer.callReason}</div>
+              {customer.notes && <div style={{ marginTop: 8, fontSize: 12, color: 'var(--text-tertiary)', lineHeight: 1.5 }}><strong>Note for agent:</strong> {customer.notes}</div>}
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, color: 'var(--text-tertiary)', paddingTop: 32, paddingBottom: 16 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, color: 'var(--text-tertiary)', paddingTop: 16, paddingBottom: 16 }}>
               <div style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: 40, color: 'var(--border-subtle)', lineHeight: 1 }}>◎</div>
               <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Awaiting call</div>
-              <div style={{ fontSize: 13, textAlign: 'center', maxWidth: 280, lineHeight: 1.6 }}>Live transcripts and AI suggestions will appear here once a patient call connects from Amazon Connect.</div>
+              <div style={{ fontSize: 13, textAlign: 'center', maxWidth: 280, lineHeight: 1.6 }}>Live transcripts and AI suggestions will appear here once {customer.firstName}&apos;s call connects from Amazon Connect.</div>
             </div>
           </div>
         )}
 
         {turns.map((turn, idx) => (
-          <TurnRow key={turn.id} turn={turn} suggestions={suggestionsByTurn.get(idx) ?? []} callStartedAt={call.startedAt} />
+          <TurnRow key={turn.id} turn={turn} suggestions={suggestionsByTurn.get(idx) ?? []} callStartedAt={call.startedAt} customer={customer} />
         ))}
 
         {partials.CUSTOMER && (
           <div style={{ padding: '10px 0' }}>
-            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--ah-emerald)' }}>Caller · Anderson</span>
+            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--ah-emerald)' }}>Caller · {customer.lastName}</span>
             <p style={{ fontSize: 14.5, fontStyle: 'italic', color: 'var(--text-tertiary)', margin: '6px 0 0' }}>{partials.CUSTOMER}</p>
           </div>
         )}
@@ -339,7 +365,7 @@ function TranscriptPanel({ turns, partials, suggestionsByTurn, call }: { turns: 
   )
 }
 
-// ─── Right rail tabs ──────────────────────────────────────────────────────────
+// ─── Right rail tabs — all data-driven from `customer` ───────────────────────
 
 type RailTab = 'member' | 'claim' | 'coverage' | 'history' | 'compliance'
 const RAIL_TABS: { key: RailTab; label: string }[] = [
@@ -362,7 +388,7 @@ function RailRow({ k, v, vColor }: { k: string; v: string; vColor?: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 0', borderBottom: '1px solid var(--border-subtle)' }}>
       <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-tertiary)' }}>{k}</span>
-      <span style={{ fontSize: 12.5, fontWeight: 500, color: vColor ?? 'var(--text-primary)' }}>{v}</span>
+      <span style={{ fontSize: 12.5, fontWeight: 500, color: vColor ?? 'var(--text-primary)', textAlign: 'right', maxWidth: '60%' }}>{v}</span>
     </div>
   )
 }
@@ -376,129 +402,173 @@ function SectionHead({ children, tag }: { children: React.ReactNode; tag?: strin
   )
 }
 
-function MemberTab() {
+function MemberTab({ customer }: { customer: Customer }) {
+  const langLabel = customer.language === 'es' ? 'ES (Spanish-preferred)' : customer.language === 'tl' ? 'TL (Tagalog)' : 'EN-US'
   return (
     <>
       <SectionHead>Patient identity</SectionHead>
       <div style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 8, padding: '4px 12px' }}>
-        <RailRow k="Full name" v="Michael R. Anderson" />
-        <RailRow k="Date of birth" v="Apr 14, 1978" />
-        <RailRow k="Member ID" v="ANH-2418-4421" />
-        <RailRow k="Group" v="GRP-TX-00112" />
-        <RailRow k="Plan" v="BCBS TX PPO · Gold" />
-        <RailRow k="Effective" v="Jan 01, 2026" vColor="#16a34a" />
-        <RailRow k="PCP" v="Dr. L. Okafor · Dallas Downtown" />
+        <RailRow k="Full name" v={customer.name} />
+        <RailRow k="Date of birth" v={fmtDate(customer.dob)} />
+        <RailRow k="Member ID" v={customer.memberId} />
+        <RailRow k="Group" v={customer.groupId} />
+        <RailRow k="Plan" v={customer.planName} />
+        <RailRow k="Effective" v={fmtDate(customer.effectiveDate)} vColor="#16a34a" />
+        <RailRow k="PCP" v={customer.pcp} />
       </div>
       <SectionHead tag="Voice AI">Verification status</SectionHead>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
         <MetricBox label="Name confirmed" value="✓" positive />
         <MetricBox label="Member ID" value="✓" positive />
-        <MetricBox label="Claim ID" value="·" sub="pending" />
+        <MetricBox label="Claim ID" value={customer.activeClaimId ? '·' : '—'} sub={customer.activeClaimId ? 'pending' : 'n/a'} />
         <MetricBox label="HIPAA cleared" value="—" sub="awaits 3rd ID" />
       </div>
       <SectionHead>Contact preferences</SectionHead>
       <div style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 8, padding: '4px 12px' }}>
-        <RailRow k="Mobile" v="+1 (214) 555-0188" />
-        <RailRow k="Email" v="m.anderson@example.com" />
-        <RailRow k="Preferred channel" v="SMS" />
-        <RailRow k="Language" v="EN-US" />
+        <RailRow k="Mobile" v={customer.phoneDisplay} />
+        <RailRow k="Email" v={customer.email} />
+        <RailRow k="City" v={`${customer.city}, ${customer.state}`} />
+        <RailRow k="Language" v={langLabel} />
       </div>
     </>
   )
 }
 
-function ClaimTab() {
+function ClaimTab({ customer }: { customer: Customer }) {
+  const claim = activeClaim(customer)
+  if (!claim) {
+    return (
+      <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 13 }}>
+        No active claim on file for this member.
+      </div>
+    )
+  }
   return (
     <>
-      <SectionHead>Active claim · CLM-9047-2206</SectionHead>
+      <SectionHead>Active claim · {claim.id}</SectionHead>
       <div style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 8, padding: '4px 12px' }}>
-        <RailRow k="Status" v="In review" vColor="#d97706" />
-        <RailRow k="Service date" v="Apr 22, 2026" />
-        <RailRow k="Provider" v="Baylor Scott & White" />
-        <RailRow k="Service type" v="Outpatient · MRI lumbar" />
-        <RailRow k="Billed" v="$3,420.00" />
-        <RailRow k="Allowed" v="$1,810.00" />
-        <RailRow k="Plan paid" v="$1,448.00" />
-        <RailRow k="Patient resp." v="$362.00" />
+        <RailRow k="Status" v={claimStatusLabel(claim.status)} vColor={claimStatusColor(claim.status)} />
+        <RailRow k="Service date" v={fmtDate(claim.serviceDate)} />
+        <RailRow k="Provider" v={claim.provider} />
+        <RailRow k="Service type" v={claim.serviceType} />
+        {claim.cpt && <RailRow k="CPT" v={claim.cpt} />}
+        <RailRow k="Billed" v={fmtMoney(claim.billed)} />
+        <RailRow k="Allowed" v={fmtMoney(claim.allowed)} />
+        <RailRow k="Plan paid" v={fmtMoney(claim.planPaid)} />
+        <RailRow k="Patient resp." v={fmtMoney(claim.patientResp)} />
       </div>
-      <SectionHead tag="KB">Pending items</SectionHead>
-      <div style={{ background: 'rgba(217,119,6,0.06)', border: '1px solid rgba(217,119,6,0.2)', borderRadius: 8, padding: '10px 12px', fontSize: 12.5, lineHeight: 1.5, color: 'var(--text-primary)' }}>
-        Adjudication waiting on provider response to <strong>operative report</strong> request (sent Apr 28). Expected resolution by <strong>May 22, 2026</strong>.
-      </div>
-      <SectionHead>Documents</SectionHead>
-      {[
-        { d: 'Apr 24', t: 'Claim received · 837P from clearinghouse' },
-        { d: 'Apr 26', t: 'Auto-adjudication held · medical-necessity check' },
-        { d: 'Apr 28', t: 'Records request sent to provider' },
-        { d: 'May 03', t: 'Provider acknowledged · ETA 14 days' },
-      ].map(i => (
-        <div key={i.d} style={{ display: 'flex', gap: 10, fontSize: 12, marginBottom: 6 }}>
-          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: 'var(--text-tertiary)', width: 48, flexShrink: 0, marginTop: 1 }}>{i.d}</span>
-          <span style={{ color: 'var(--text-secondary)' }}>{i.t}</span>
-        </div>
-      ))}
+      {claim.status === 'denied' && claim.denialCode && (
+        <>
+          <SectionHead tag="Denial">{claim.denialCode}</SectionHead>
+          <div style={{ background: 'rgba(220,38,38,0.06)', border: '1px solid rgba(220,38,38,0.2)', borderRadius: 8, padding: '10px 12px', fontSize: 12.5, lineHeight: 1.5, color: 'var(--text-primary)' }}>
+            <strong>Reason:</strong> {claim.denialReason ?? '—'}
+            {claim.appealDeadline && <div style={{ marginTop: 6, fontSize: 11.5, color: 'var(--text-secondary)' }}>Appeal deadline: <strong>{fmtDate(claim.appealDeadline)}</strong></div>}
+          </div>
+        </>
+      )}
+      {claim.notes && (
+        <>
+          <SectionHead tag="KB">Note</SectionHead>
+          <div style={{ background: 'rgba(217,119,6,0.06)', border: '1px solid rgba(217,119,6,0.2)', borderRadius: 8, padding: '10px 12px', fontSize: 12.5, lineHeight: 1.5, color: 'var(--text-primary)' }}>
+            {claim.notes}
+          </div>
+        </>
+      )}
+      {(customer.creditBalance ?? 0) > 0 && (
+        <>
+          <SectionHead tag="Credit">Refundable</SectionHead>
+          <div style={{ background: 'rgba(22,163,74,0.06)', border: '1px solid rgba(22,163,74,0.2)', borderRadius: 8, padding: '10px 12px', fontSize: 12.5, lineHeight: 1.5, color: 'var(--text-primary)' }}>
+            Credit balance <strong>{fmtMoney(customer.creditBalance!)}</strong> available — refund via ACH (10-day SLA) or apply to next bill.
+          </div>
+        </>
+      )}
     </>
   )
 }
 
-function CoverageTab() {
+function CoverageTab({ customer }: { customer: Customer }) {
+  const e = customer.eligibility
   return (
     <>
-      <SectionHead>Plan benefits · BCBS TX PPO Gold</SectionHead>
+      <SectionHead>Plan benefits · {customer.planName}</SectionHead>
       <div style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 8, padding: '4px 12px' }}>
         <RailRow k="Network status" v="In-network" vColor="#16a34a" />
-        <RailRow k="Deductible · ind." v="$750 met / $1,500" />
-        <RailRow k="OOP max · ind." v="$2,140 met / $5,000" />
-        <RailRow k="Copay · specialist" v="$45" />
-        <RailRow k="Coinsurance" v="20% after ded." />
-        <RailRow k="Prior auth · MRI" v="Required" vColor="#d97706" />
-        <RailRow k="Prior auth · status" v="Approved · PA-77310" vColor="#16a34a" />
+        <RailRow k="Deductible · ind." v={`${fmtMoney(e.deductibleMet)} met / ${fmtMoney(e.deductibleTotal)}`} />
+        <RailRow k="OOP max · ind." v={e.oopTotal > 0 ? `${fmtMoney(e.oopMet)} met / ${fmtMoney(e.oopTotal)}` : 'No OOP max (MA + Supplement)'} />
+        <RailRow k="Copay · specialist" v={fmtMoney(e.copaySpecialist)} />
+        <RailRow k="Coinsurance" v={`${e.coinsurancePct}%${e.deductibleTotal > 0 ? ' after ded.' : ''}`} />
+        {customer.priorAuths.length > 0 && customer.priorAuths.map(pa => (
+          <RailRow key={pa.id} k={`Prior auth · ${pa.procedure.slice(0, 28)}`} v={`${pa.status === 'approved' ? 'Approved' : pa.status === 'pending' ? 'Pending' : pa.status === 'denied' ? 'Denied' : 'Expired'} · ${pa.id}`} vColor={pa.status === 'approved' ? '#16a34a' : pa.status === 'pending' ? '#d97706' : '#dc2626'} />
+        ))}
       </div>
       <SectionHead tag="Eligibility">Live check · 270/271</SectionHead>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-        <MetricBox label="Active" value="Yes" positive />
-        <MetricBox label="Effective" value="01/01/26" />
+        <MetricBox label="Active" value={e.status === 'active' ? 'Yes' : 'No'} positive={e.status === 'active'} />
+        <MetricBox label="Effective" value={customer.effectiveDate.slice(5).replace('-', '/') + '/' + customer.effectiveDate.slice(2, 4)} />
         <MetricBox label="Verified" value="Just now" />
-        <MetricBox label="Source" value="BCBS" sub="270/271" />
+        <MetricBox label="Source" value={customer.payer.split(' ')[0]} sub="270/271" />
       </div>
+      {customer.eligibility.priorAuthRequired.length > 0 && (
+        <>
+          <SectionHead>Prior auth required for</SectionHead>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {customer.eligibility.priorAuthRequired.map(t => (
+              <span key={t} style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, letterSpacing: '0.06em', color: '#d97706', background: 'rgba(217,119,6,0.08)', border: '1px solid rgba(217,119,6,0.3)', borderRadius: 4, padding: '3px 8px' }}>{t}</span>
+            ))}
+          </div>
+        </>
+      )}
     </>
   )
 }
 
-function HistoryTab() {
+function HistoryTab({ customer }: { customer: Customer }) {
+  const recentCalls = customer.callHistory.slice(0, 6)
   return (
     <>
       <SectionHead>Recent claims</SectionHead>
-      {[
-        { d: 'Apr 22', t: 'CLM-9047 · MRI lumbar · in review' },
-        { d: 'Feb 09', t: 'CLM-8821 · Office visit · paid $40' },
-        { d: 'Jan 14', t: 'CLM-8617 · Lab panel · paid $112' },
-        { d: 'Nov 03', t: 'CLM-8104 · Specialist visit · paid $45' },
-        { d: 'Sep 12', t: 'CLM-7710 · Annual physical · paid $0 (preventive)' },
-      ].map(i => (
-        <div key={i.d} style={{ display: 'flex', gap: 10, fontSize: 12, marginBottom: 8 }}>
-          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: 'var(--text-tertiary)', width: 48, flexShrink: 0, marginTop: 1 }}>{i.d}</span>
-          <span style={{ color: 'var(--text-secondary)' }}>{i.t}</span>
+      {customer.claims.length === 0 && (
+        <div style={{ fontSize: 12.5, color: 'var(--text-tertiary)', padding: '6px 0 12px' }}>No prior claims on file.</div>
+      )}
+      {customer.claims.map(c => (
+        <div key={c.id} style={{ display: 'flex', gap: 10, fontSize: 12, marginBottom: 8 }}>
+          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: 'var(--text-tertiary)', width: 56, flexShrink: 0, marginTop: 1 }}>{fmtDate(c.serviceDate).slice(0, 6)}</span>
+          <span style={{ color: 'var(--text-secondary)', flex: 1 }}>
+            <strong style={{ color: 'var(--text-primary)' }}>{c.id.split('-')[0]}-{c.id.split('-')[1]}</strong> · {c.serviceType.split(' (')[0]} · <span style={{ color: claimStatusColor(c.status) }}>{claimStatusLabel(c.status)}{c.status === 'paid' ? ` ${fmtMoney(c.patientResp)}` : c.status === 'denied' ? ` ${c.denialCode ?? ''}` : ''}</span>
+          </span>
         </div>
       ))}
-      <SectionHead>Contact history · 90d</SectionHead>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-        <MetricBox label="Calls" value="3" />
-        <MetricBox label="Avg handle" value="6:42" sub="min" />
-        <MetricBox label="CSAT" value="4.7" sub="/ 5" positive />
-        <MetricBox label="FCR" value="100%" positive />
-      </div>
+      <SectionHead>Recent appointments</SectionHead>
+      {customer.appointments.length === 0 && (
+        <div style={{ fontSize: 12.5, color: 'var(--text-tertiary)', padding: '6px 0 12px' }}>No appointments on file.</div>
+      )}
+      {customer.appointments.map((a, i) => (
+        <div key={i} style={{ display: 'flex', gap: 10, fontSize: 12, marginBottom: 8 }}>
+          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: 'var(--text-tertiary)', width: 56, flexShrink: 0, marginTop: 1 }}>{fmtDate(a.date).slice(0, 6)}</span>
+          <span style={{ color: 'var(--text-secondary)', flex: 1 }}>{a.provider} · {a.type} · <span style={{ color: a.status === 'completed' ? '#16a34a' : a.status === 'scheduled' ? 'var(--text-secondary)' : '#dc2626' }}>{a.status}</span></span>
+        </div>
+      ))}
+      <SectionHead>Recent contact</SectionHead>
+      {recentCalls.length === 0 && (
+        <div style={{ fontSize: 12.5, color: 'var(--text-tertiary)', padding: '6px 0 12px' }}>No prior contact history.</div>
+      )}
+      {recentCalls.map((h, i) => (
+        <div key={i} style={{ display: 'flex', gap: 10, fontSize: 12, marginBottom: 8 }}>
+          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: 'var(--text-tertiary)', width: 56, flexShrink: 0, marginTop: 1 }}>{fmtDate(h.date).slice(0, 6)}</span>
+          <span style={{ color: 'var(--text-secondary)', flex: 1 }}>{h.channel.toUpperCase()} · {h.topic} · <em style={{ color: h.sentiment === 'positive' ? '#16a34a' : h.sentiment === 'negative' ? '#dc2626' : 'var(--text-tertiary)' }}>{h.sentiment}</em></span>
+        </div>
+      ))}
     </>
   )
 }
 
-function ComplianceTab() {
+function ComplianceTab({ customer }: { customer: Customer }) {
   const flags = [
     { ok: true,  title: 'HIPAA · 3-ID verification in progress', sub: 'Name + Member ID captured. Claim ID still pending — do not disclose claim details yet.' },
-    { ok: true,  title: 'Call recording consent · acknowledged',  sub: 'IVR consent captured at 09:31 · retained per Access Health policy' },
+    { ok: true,  title: 'Call recording consent · acknowledged',  sub: 'IVR consent captured at call start · retained per Access Health policy' },
     { ok: false, title: 'PHI in transcript · auto-redaction on',  sub: 'Real-time PII/PHI masking active · review redaction log post-call' },
     { ok: true,  title: 'Authorization on file',                  sub: 'Patient signed Authorization for Use & Disclosure · valid through Dec 31, 2026' },
-    { ok: false, title: 'Escalation path · supervisor available', sub: 'If claim status is ambiguous, transfer to Tier-2 (warm) instead of guessing' },
+    { ok: customer.sentiment !== 'negative', title: 'Escalation path · supervisor available', sub: customer.sentiment === 'negative' ? 'Sentiment cooling — flag for warm transfer if unresolved within 5 min' : 'Tier-2 available if claim status is ambiguous' },
   ]
   return (
     <>
@@ -517,7 +587,7 @@ function ComplianceTab() {
         {[
           { label: 'Auto', color: '#16a34a', bg: 'rgba(22,163,74,0.06)', border: 'rgba(22,163,74,0.2)', count: 3, desc: 'Surface SOP step · pull KB snippet · log call summary' },
           { label: 'Confirm', color: '#d97706', bg: 'rgba(217,119,6,0.06)', border: 'rgba(217,119,6,0.2)', count: 2, desc: 'Draft EOB email · schedule provider callback' },
-          { label: 'Approve', color: '#dc2626', bg: 'rgba(220,38,38,0.06)', border: 'rgba(220,38,38,0.2)', count: 1, desc: 'Initiate formal appeal on denial' },
+          { label: 'Approve', color: '#dc2626', bg: 'rgba(220,38,38,0.06)', border: 'rgba(220,38,38,0.2)', count: 1, desc: customer.flow === 'claim_status' && customer.activeClaimId ? 'Initiate formal appeal on denial' : 'Initiate manual intervention' },
         ].map(t => (
           <div key={t.label} style={{ background: t.bg, border: `1px solid ${t.border}`, borderRadius: 8, padding: 10 }}>
             <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: t.color }}>{t.label}</div>
@@ -530,15 +600,16 @@ function ComplianceTab() {
   )
 }
 
-function RightRailPanel({ sopState, latestSuggestion }: { sopState: SopState; latestSuggestion?: { text: string; kind?: string } | null }) {
+function RightRailPanel({ sopState, latestSuggestion, customer }: { sopState: SopState; latestSuggestion?: { text: string; kind?: string } | null; customer: Customer }) {
   const [active, setActive] = useState<RailTab>('member')
+  const flowLabel = customer.flow === 'claim_status' ? 'Claim status' : customer.flow === 'eligibility_priorauth' ? 'Eligibility + PA' : 'Billing / refund'
   return (
     <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: 14, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-        <div style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--ah-emerald)', color: '#fff', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: 14, flexShrink: 0 }}>A</div>
+        <div style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--ah-emerald)', color: '#fff', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: 14, flexShrink: 0 }}>{customer.initials.charAt(0)}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text-primary)' }}>Anderson, M.</div>
-          <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: 'var(--text-tertiary)', letterSpacing: '0.06em', textTransform: 'uppercase', marginTop: 2 }}>Member · 6 yrs · PPO Gold · BCBS TX</div>
+          <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text-primary)' }}>{customer.lastName}, {customer.firstName.charAt(0)}.</div>
+          <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: 'var(--text-tertiary)', letterSpacing: '0.06em', textTransform: 'uppercase', marginTop: 2 }}>{customer.planType} · {customer.payer} · {flowLabel}</div>
         </div>
       </div>
 
@@ -559,11 +630,11 @@ function RightRailPanel({ sopState, latestSuggestion }: { sopState: SopState; la
       </div>
 
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '4px 16px 16px' }}>
-        {active === 'member'     && <MemberTab />}
-        {active === 'claim'      && <ClaimTab />}
-        {active === 'coverage'   && <CoverageTab />}
-        {active === 'history'    && <HistoryTab />}
-        {active === 'compliance' && <ComplianceTab />}
+        {active === 'member'     && <MemberTab customer={customer} />}
+        {active === 'claim'      && <ClaimTab customer={customer} />}
+        {active === 'coverage'   && <CoverageTab customer={customer} />}
+        {active === 'history'    && <HistoryTab customer={customer} />}
+        {active === 'compliance' && <ComplianceTab customer={customer} />}
       </div>
     </div>
   )
@@ -571,10 +642,11 @@ function RightRailPanel({ sopState, latestSuggestion }: { sopState: SopState; la
 
 // ─── Ask panel ────────────────────────────────────────────────────────────────
 
-function AskPanel({ messages, onAsk, wsStatus }: {
+function AskPanel({ messages, onAsk, wsStatus, customer }: {
   messages: { id: string; role: 'user' | 'assistant'; text: string; done: boolean }[]
   onAsk: (q: string) => void
   wsStatus: ConnectionStatus
+  customer: Customer
 }) {
   const [q, setQ] = useState('')
   const endRef = useRef<HTMLDivElement>(null)
@@ -595,7 +667,7 @@ function AskPanel({ messages, onAsk, wsStatus }: {
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
         {messages.length === 0 && (
           <div style={{ color: 'var(--text-tertiary)', fontSize: 12.5, lineHeight: 1.6 }}>
-            Ask anything about this patient — claim status, plan benefits, prior auth, appeal window, EOB. Answers come from the Access Health KB.
+            Ask anything about <strong>{customer.firstName}</strong> — claim status, plan benefits, prior auth, appeal window, EOB. Answers come from the Access Health KB.
           </div>
         )}
         {messages.map(m => (
@@ -613,7 +685,7 @@ function AskPanel({ messages, onAsk, wsStatus }: {
       <div style={{ padding: '10px 12px', borderTop: '1px solid var(--border-subtle)', display: 'flex', gap: 8, flexShrink: 0 }}>
         <input
           value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && submit()}
-          placeholder="Ask about this patient or claim…"
+          placeholder={`Ask about ${customer.firstName}…`}
           style={{ flex: 1, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: 'var(--text-primary)', outline: 'none' }}
         />
         <button onClick={submit} disabled={disabled} style={{
@@ -627,6 +699,51 @@ function AskPanel({ messages, onAsk, wsStatus }: {
   )
 }
 
+// ─── Caller picker — demo simulator for "incoming call from..." ───────────────
+
+function CallerPicker({ onPick, current }: { onPick: (c: Customer) => void; current: Customer }) {
+  const [open, setOpen] = useState(false)
+  const flowLabel = (f: Customer['flow']) => f === 'claim_status' ? 'Claim status' : f === 'eligibility_priorauth' ? 'Eligibility + PA' : 'Billing / refund'
+  const flowColor = (f: Customer['flow']) => f === 'claim_status' ? '#3b82f6' : f === 'eligibility_priorauth' ? '#16a34a' : '#d97706'
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <button onClick={() => setOpen(o => !o)} style={{
+        display: 'flex', alignItems: 'center', gap: 8, height: 32, padding: '0 12px',
+        background: 'var(--bg-card)', border: '1px solid var(--border-default)', borderRadius: 8,
+        fontFamily: "'JetBrains Mono',monospace", fontSize: 11, fontWeight: 600, letterSpacing: '0.06em',
+        color: 'var(--text-secondary)', cursor: 'pointer', whiteSpace: 'nowrap',
+      }}>
+        <span style={{ width: 6, height: 6, borderRadius: '50%', background: flowColor(current.flow) }} />
+        Simulate caller: <strong style={{ color: 'var(--text-primary)' }}>{current.lastName}</strong>
+        <span style={{ color: 'var(--text-tertiary)', fontSize: 10 }}>▾</span>
+      </button>
+      {open && (
+        <div style={{ position: 'absolute', top: 38, right: 0, width: 360, background: 'var(--bg-card)', border: '1px solid var(--border-default)', borderRadius: 10, boxShadow: '0 18px 40px -12px rgba(20,15,10,0.18)', overflow: 'hidden', zIndex: 50 }}>
+          <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--border-subtle)', fontFamily: "'JetBrains Mono',monospace", fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-tertiary)' }}>
+            Demo · pick incoming caller
+          </div>
+          <div style={{ maxHeight: 380, overflowY: 'auto' }}>
+            {CUSTOMERS.map(c => (
+              <button key={c.phone} onClick={() => { onPick(c); setOpen(false) }} style={{
+                display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '10px 14px', textAlign: 'left',
+                background: c.phone === current.phone ? 'var(--bg-subtle)' : 'transparent', border: 'none',
+                borderTop: '1px solid var(--border-subtle)', cursor: 'pointer', fontFamily: 'inherit',
+              }}>
+                <span style={{ width: 7, height: 7, borderRadius: '50%', background: flowColor(c.flow), flexShrink: 0 }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{c.lastName}, {c.firstName.charAt(0)}.</div>
+                  <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: 'var(--text-tertiary)', marginTop: 2 }}>{c.phoneDisplay} · {flowLabel(c.flow)}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Top status bar ───────────────────────────────────────────────────────────
 
 function StatusBar({ call, wsStatus }: { call: CallState; wsStatus: ConnectionStatus }) {
@@ -636,7 +753,7 @@ function StatusBar({ call, wsStatus }: { call: CallState; wsStatus: ConnectionSt
   const wsColor = wsStatus === 'connected' ? '#16a34a' : wsStatus === 'connecting' ? '#d97706' : '#dc2626'
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20, flexWrap: 'wrap' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span style={{ width: 10, height: 10, borderRadius: '50%', background: call.status === 'live' ? 'var(--ah-emerald)' : 'var(--text-tertiary)', flexShrink: 0 }} />
         <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: call.status === 'live' ? 'var(--text-primary)' : 'var(--text-tertiary)' }}>
@@ -644,7 +761,7 @@ function StatusBar({ call, wsStatus }: { call: CallState; wsStatus: ConnectionSt
         </span>
         {call.callSid && <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: 'var(--text-tertiary)' }}>{call.callSid.slice(0, 16)}…</span>}
       </div>
-      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         <span style={{ width: 7, height: 7, borderRadius: '50%', background: wsColor, flexShrink: 0 }} />
         <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-tertiary)' }}>WS: {wsStatus}</span>
       </div>
@@ -659,7 +776,18 @@ function VoiceIntelligenceContent() {
 
   const handleEvent = useCallback((e: ServerEvent) => {
     switch (e.type) {
-      case 'call_start':   dispatch({ type: 'reset', callSid: e.callSid }); break
+      case 'call_start': {
+        // Resolve customer from backend-sent phone (preferred) or memberId.
+        let resolved: Customer = DEFAULT_CUSTOMER
+        let unresolved: string | null = null
+        if (e.phone) {
+          const hit = findByPhone(e.phone)
+          if (hit) resolved = hit
+          else unresolved = e.phone
+        }
+        dispatch({ type: 'reset', callSid: e.callSid, customer: resolved, unresolvedPhone: unresolved })
+        break
+      }
       case 'call_end':     dispatch({ type: 'callEnd' }); break
       case 'partial':      dispatch({ type: 'partial', label: e.label, text: e.text }); break
       case 'transcript':   dispatch({ type: 'turn', label: e.label, text: e.text }); break
@@ -702,30 +830,41 @@ function VoiceIntelligenceContent() {
     return { text: sorted[0].text, kind: sorted[0].kind }
   }, [state.suggestions])
 
+  // Demo "simulate caller" picker — fires a synthetic call_start so the UI
+  // behaves identically to a real backend-sent phone. Once the backend ships
+  // the phone field on call_start, this picker becomes optional (still useful
+  // for demo control + offline testing).
+  const handlePickCaller = useCallback((c: Customer) => {
+    dispatch({ type: 'reset', callSid: `demo-${c.lastName.toLowerCase()}-${Date.now()}`, customer: c, unresolvedPhone: null })
+  }, [])
+
   return (
     <div style={{ padding: '28px 32px', height: '100%', display: 'flex', flexDirection: 'column', maxWidth: 1600, margin: '0 auto' }}>
       <div style={{ marginBottom: 20 }}>
         <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, color: 'var(--text-tertiary)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>Voice Intelligence</div>
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
           <h1 style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: 36, fontWeight: 400, color: 'var(--text-primary)', margin: 0, lineHeight: 1.1 }}>
             Live call <em style={{ fontStyle: 'italic', color: 'var(--ah-emerald)' }}>assist</em>
           </h1>
-          <StatusBar call={state.call} wsStatus={wsStatus} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+            <StatusBar call={state.call} wsStatus={wsStatus} />
+            <CallerPicker onPick={handlePickCaller} current={state.customer} />
+          </div>
         </div>
       </div>
 
       <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '1fr 360px', gridTemplateRows: '1fr 260px', gap: 16 }}>
         {/* Transcript — spans both rows on left */}
         <div style={{ gridRow: '1 / 3' }}>
-          <TranscriptPanel turns={state.turns} partials={state.partials} suggestionsByTurn={suggestionsByTurn} call={state.call} />
+          <TranscriptPanel turns={state.turns} partials={state.partials} suggestionsByTurn={suggestionsByTurn} call={state.call} customer={state.customer} unresolvedPhone={state.unresolvedPhone} />
         </div>
         {/* Right rail top */}
         <div>
-          <RightRailPanel sopState={effectiveSopState} latestSuggestion={latestSuggestion} />
+          <RightRailPanel sopState={effectiveSopState} latestSuggestion={latestSuggestion} customer={state.customer} />
         </div>
         {/* Ask panel bottom right */}
         <div>
-          <AskPanel messages={state.askMessages} onAsk={handleAsk} wsStatus={wsStatus} />
+          <AskPanel messages={state.askMessages} onAsk={handleAsk} wsStatus={wsStatus} customer={state.customer} />
         </div>
       </div>
     </div>

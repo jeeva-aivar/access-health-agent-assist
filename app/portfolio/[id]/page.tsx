@@ -3,151 +3,175 @@ import { useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { AppShell } from '@/components/shared/AppShell'
 import { Icon } from '@/components/ui/Icon'
+import {
+  CUSTOMERS, DEFAULT_CUSTOMER, findByMemberId, activeClaim,
+  type Customer, type ClaimEntry, type PriorAuthEntry, type CallHistoryEntry, type Appointment,
+} from '@/lib/customers'
 
-// ─── Full case detail ─────────────────────────────────────────────────────────
-// MOCK ONLY — no real PHI. Three healthcare RCM cases for the demo.
-const CUSTOMER_DETAIL: Record<string, any> = {
-  '1': {
-    id: 1, name: 'Anderson, M.', segment: 'Individual', tier: 'Priority', cifId: 'MEM-ANH-2418-4421',
-    rm: 'Jane Doe', since: '2020', city: 'Dallas, TX', industry: 'BCBS TX · PPO Gold',
-    revenue: 4.2, aum: 8.4, health: 62, creditLimit: 12, utilisation: 71,
-    npa: false, kycDue: '2026-08-15', phone: '+1 (214) 555-0188', email: 'm.anderson@example.com',
-    tags: ['Prior-auth pending', 'Appeal-eligible', 'Eligibility-due-Q3'],
-    scores: { engagement: 58, repayment: 81, growth: 44, loyalty: 72 },
-    products: [
-      { name: 'Active claim · CLM-9047-2206 (MRI lumbar)', value: '$3,420', status: 'active', util: 71 },
-      { name: 'Prior auth · PA-77310',                     value: 'Approved', status: 'active', util: 100 },
-      { name: 'Supplemental rider',                        value: 'Eligible', status: 'opportunity' },
-      { name: 'HSA balance',                               value: '$1,840',  status: 'active', util: 40 },
-    ],
-    revenue12m: [3.1, 3.4, 3.6, 3.8, 3.9, 3.7, 4.0, 4.1, 4.2, 3.9, 4.1, 4.2],
-    balanceTrend: [7.2, 7.5, 7.8, 8.1, 7.9, 8.0, 8.2, 8.3, 8.1, 8.2, 8.4, 8.4],
-    conversations: [
-      { date: '18 May 2026', type: 'Call', summary: 'Discussed appeal timeline for denied claim. Caller wants written confirmation — held for review.', sentiment: 'neutral', aiDraft: true },
-      { date: '11 May 2026', type: 'Email', summary: 'Sent operative report request to Baylor Scott & White. ETA 14 business days.', sentiment: 'positive', aiDraft: false },
-      { date: '04 May 2026', type: 'Call', summary: 'Eligibility verified. Plan benefits explained. Caller confirmed PCP and copay.', sentiment: 'positive', aiDraft: false },
-      { date: '22 Apr 2026', type: 'Email', summary: 'EOB delivery for prior visit. No action required.', sentiment: 'neutral', aiDraft: true },
-      { date: '14 Apr 2026', type: 'Call', summary: 'Caller raised appeal timeline question on N290 denial — sentiment cooling, escalated.', sentiment: 'negative', aiDraft: false },
-    ],
-    importantDates: [
-      { label: 'Claim adjudication ETA',     date: '22 May 2026', urgency: 'high',   icon: 'AlertCircle' },
-      { label: 'Eligibility refresh due',    date: '15 Aug 2026', urgency: 'medium', icon: 'FileText' },
-      { label: 'Birthday',                   date: '14 Apr 2027', urgency: 'low',    icon: 'Gift' },
-      { label: 'Annual deductible reset',    date: '01 Jan 2027', urgency: 'medium', icon: 'Calendar' },
-      { label: 'Prior-auth expiry · PA-77310', date: '20 Oct 2026', urgency: 'medium', icon: 'Landmark' },
-    ],
-    preferences: {
-      contact: 'SMS + Email (no calls before 9am CT)',
-      decisionStyle: 'Self-directed — patient handles all decisions himself',
-      language: 'English (US)',
-      meetingPreference: 'Phone callback; in-person only if necessary',
-      keyRelationships: ['Michael Anderson (member)', 'Lisa Anderson (spouse, joint)', 'Dr. L. Okafor (PCP)'],
-      sensitivities: 'OOP costs sensitive — currently at OOP max for the plan year',
-    },
-    aiInsight: 'Anderson is a moderate-risk member showing declining health score (-8 pts this quarter) driven by an unresolved denied claim. Adjudication ETA 22 May is the critical near-term event. Supplemental rider is a fit given his deductible activity. Recommend SMS confirmation of appeal window before today\'s call.',
-  },
-  '2': {
-    id: 2, name: 'Garcia family', segment: 'Family', tier: 'Priority', cifId: 'MEM-GAR-7731-2204',
-    rm: 'Jane Doe', since: '2022', city: 'Houston, TX', industry: 'Access Health Family PPO',
-    revenue: 2.8, aum: 12.1, health: 88, creditLimit: 5, utilisation: 12,
-    npa: false, kycDue: '2027-02-10', phone: '+1 (713) 555-0212', email: 'l.garcia@example.com',
-    tags: ['Family · 3 dependents', 'Supplemental fit', 'Bilingual'],
-    scores: { engagement: 91, repayment: 96, growth: 82, loyalty: 88 },
-    products: [
-      { name: 'Family PPO · medical',            value: 'Active', status: 'active', util: null },
-      { name: 'Pediatric vision + dental rider', value: 'Active', status: 'active', util: null },
-      { name: 'HSA family',                      value: '$3,200', status: 'active', util: null },
-      { name: 'Supplemental Family rider',       value: 'Eligible', status: 'opportunity' },
-    ],
-    revenue12m: [2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.5, 2.6, 2.7, 2.7, 2.8, 2.8],
-    balanceTrend: [9.8, 10.2, 10.5, 10.8, 11.0, 11.2, 11.0, 11.3, 11.5, 11.8, 12.0, 12.1],
-    conversations: [
-      { date: '17 May 2026', type: 'Call', summary: 'Discussed annual deductible reset and supplemental rider fit. Member interested — needs brochure.', sentiment: 'positive', aiDraft: true },
-      { date: '25 Apr 2026', type: 'Meeting', summary: 'Benefits walk-through for whole family. Pediatric coverage confirmed for two dependents.', sentiment: 'positive', aiDraft: false },
-      { date: '12 Apr 2026', type: 'Email', summary: 'Q1 utilization summary sent. Family is well under deductible.', sentiment: 'positive', aiDraft: false },
-    ],
-    importantDates: [
-      { label: 'Supplemental enrollment window', date: '14 May 2026', urgency: 'high',   icon: 'TrendingUp' },
-      { label: 'Open-enrollment season',          date: '01 Nov 2026', urgency: 'high',   icon: 'Calendar' },
-      { label: 'Anniversary — onboarding',        date: '05 Jun 2026', urgency: 'low',    icon: 'Gift' },
-      { label: 'Eligibility refresh',             date: '10 Feb 2027', urgency: 'low',    icon: 'FileText' },
-    ],
-    preferences: {
-      contact: 'SMS preferred; email for documents',
-      decisionStyle: 'Joint decision — include both spouses in benefit selections',
-      language: 'English / Spanish (prefers Spanish for letters)',
-      meetingPreference: 'Phone or video; in-person only for benefits-fair events',
-      keyRelationships: ['Luis Garcia (primary)', 'Maria Garcia (joint)', 'Three dependents (ages 8, 12, 16)'],
-      sensitivities: 'Conservative tone — avoid pushy upsell language; confirm pediatric coverage continuity',
-    },
-    aiInsight: 'Garcia family is a high-engagement, high-loyalty member. The deductible reset window (14 May) is the most time-sensitive supplemental-rider opportunity. Recommend bilingual Spanish brochure plus SMS reminder. Also a referral source — 2 families introduced in last 12 months.',
-  },
-  '9': {
-    id: 9, name: 'Davis & Park', segment: 'Provider', tier: 'Priority', cifId: 'PRV-DPK-9124-0006',
-    rm: 'Jane Doe', since: '2018', city: 'Frisco, TX', industry: 'Orthopedic Group · 14 providers',
-    revenue: 5.2, aum: 18.4, health: 95, creditLimit: 20, utilisation: 8,
-    npa: false, kycDue: '2027-06-30', phone: '+1 (469) 555-0177', email: 'contracts@davispark.example',
-    tags: ['Contracted provider', 'High-volume', 'Board-level relationship'],
-    scores: { engagement: 97, repayment: 98, growth: 92, loyalty: 95 },
-    products: [
-      { name: 'Provider contract · 2026',         value: '$480K/yr', status: 'active', util: null },
-      { name: 'Fee-for-service schedule',         value: 'Tier A',   status: 'active', util: 20 },
-      { name: 'Value-based bonus pool',           value: '$42K accrued', status: 'active', util: null },
-      { name: 'Telemed expansion (out-of-network)', value: 'Eligible', status: 'opportunity' },
-    ],
-    revenue12m: [4.1, 4.3, 4.5, 4.7, 4.8, 4.9, 5.0, 5.1, 5.0, 5.1, 5.2, 5.2],
-    balanceTrend: [14.2, 15.0, 15.6, 16.1, 16.5, 17.0, 17.2, 17.5, 17.8, 18.0, 18.2, 18.4],
-    conversations: [
-      { date: '15 May 2026', type: 'Meeting', summary: 'Q4 contract review. Claims throughput steady. Discussed expanding telemed.', sentiment: 'positive', aiDraft: false },
-      { date: '02 May 2026', type: 'Email', summary: 'Telemed expansion brochure sent. Practice manager reviewing with board.', sentiment: 'positive', aiDraft: true },
-    ],
-    importantDates: [
-      { label: 'Contract amendment review (Q2)', date: '30 Jun 2026', urgency: 'medium', icon: 'TrendingUp' },
-      { label: 'Bonus pool true-up',             date: '15 Aug 2026', urgency: 'medium', icon: 'Landmark' },
-      { label: 'Onboarding anniversary',         date: '10 Jun 2026', urgency: 'low',    icon: 'Gift' },
-    ],
-    preferences: {
-      contact: 'Only through practice manager (Anita) — 9am–6pm CT weekdays',
-      decisionStyle: 'Board-driven, data-first — prepare a one-page summary always',
-      language: 'English only',
-      meetingPreference: 'Their Frisco office or Access Health Dallas Hub lounge',
-      keyRelationships: ['Dr. Nina Davis (managing partner)', 'Dr. Sam Park (partner)', 'Anita Patel (practice manager)'],
-      sensitivities: 'Sensitive about reimbursement-delay metrics; very protective of practice operational data',
-    },
-    aiInsight: 'Davis & Park is the highest health score in your caseload (95). No immediate risks. Focus: telemed expansion — strong cross-sell potential. Contract amendment window opens June — begin redline conversation by May 30.',
-  },
+// ─── Adapter: Customer (roster) → rich detail-view shape (UI-facing) ─────────
+//
+// The detail page UI was originally built against a different (banking) shape.
+// Rather than rewriting the page, we adapt the typed Customer record into the
+// shape the UI already consumes. Every field below is derived from the canonical
+// Customer in lib/customers.ts — no data lives only on the detail page.
+
+type DetailView = {
+  cifId: string; segment: string; tier: string; city: string; name: string
+  rm: string; since: string; industry: string
+  phone: string; email: string
+  revenue: number; aum: number; creditLimit: number; utilisation: number
+  health: number
+  tags: string[]
+  scores: { engagement: number; repayment: number; growth: number; loyalty: number }
+  products: { name: string; value: string; status: string; util?: number | null }[]
+  revenue12m: number[]
+  balanceTrend: number[]
+  conversations: { type: 'Call'|'Email'|'Meeting'; date: string; summary: string; sentiment: 'positive'|'neutral'|'negative'; aiDraft: boolean }[]
+  importantDates: { label: string; date: string; urgency: 'high'|'medium'|'low'; icon: string }[]
+  preferences: {
+    contact: string; decisionStyle: string; language: string;
+    meetingPreference: string; keyRelationships: string[]; sensitivities: string;
+  }
+  aiInsight: string
 }
 
-// Fallback for cases without full detail
-function getFallback(id: string, name: string): any {
+const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+function fmtShortDate(yyyymmdd: string): string {
+  const [y, m, d] = yyyymmdd.split('-')
+  return `${parseInt(d, 10)} ${MONTH_NAMES[parseInt(m, 10) - 1]} ${y}`
+}
+
+function sentimentFor(s: Customer['sentiment']): 'positive' | 'neutral' | 'negative' {
+  if (s === 'positive') return 'positive'
+  if (s === 'negative' || s === 'cooling') return 'negative'
+  return 'neutral'
+}
+
+// Convert a CallHistoryEntry's channel into the Call/Email/Meeting bucket the
+// UI's TYPE_ICON map understands.
+function callKind(h: CallHistoryEntry): 'Call' | 'Email' | 'Meeting' {
+  if (h.channel === 'email') return 'Email'
+  if (h.channel === 'sms' || h.channel === 'portal') return 'Email'
+  return 'Call'
+}
+
+function toDetailView(c: Customer): DetailView {
+  const totalBilled = c.claims.reduce((s, cl) => s + cl.billed, 0)
+  const totalPlanPaid = c.claims.reduce((s, cl) => s + cl.planPaid, 0)
+  const paidClaims = c.claims.filter(cl => cl.status === 'paid').length
+  const deniedClaims = c.claims.filter(cl => cl.status === 'denied').length
+  const repaymentScore = c.claims.length === 0 ? 80 : Math.max(0, Math.round((paidClaims / c.claims.length) * 100))
+  const denialPenalty = deniedClaims * 15
+  const engagementScore = Math.max(20, Math.min(95, c.healthScore + (c.sentiment === 'positive' ? 8 : c.sentiment === 'negative' ? -10 : 0)))
+  const growthScore = Math.max(40, Math.min(95, c.healthScore + (c.tier === 'Priority' ? 10 : 0) - denialPenalty / 2))
+  const loyaltyYears = Math.max(1, new Date().getFullYear() - parseInt(c.memberSince.slice(0, 4), 10))
+  const loyaltyScore = Math.min(95, 55 + loyaltyYears * 6)
+
+  // Tags surfaced as quick chips on the hero — derived from member state.
+  const tags: string[] = []
+  if (c.tier === 'Priority') tags.push('Priority member')
+  if (c.healthScore < 60) tags.push('At-risk')
+  if (deniedClaims > 0) tags.push(`${deniedClaims} denied claim${deniedClaims > 1 ? 's' : ''}`)
+  if ((c.creditBalance ?? 0) > 0) tags.push('Credit balance')
+  if (c.language === 'es') tags.push('Spanish-preferred')
+  if (c.priorAuths.some(pa => pa.status === 'pending')) tags.push('PA pending')
+  if (c.flow === 'eligibility_priorauth') tags.push('Eligibility + PA')
+  if (c.flow === 'billing_refund') tags.push('Billing flow')
+  if (c.flow === 'claim_status') tags.push('Claim flow')
+  if (tags.length === 0) tags.push('Standard member')
+
+  // "Products" repurposed as the member's active plan + riders + claims.
+  const products: DetailView['products'] = [
+    { name: `Active plan · ${c.planName}`, value: 'Active', status: 'active', util: c.eligibility.deductibleTotal > 0 ? Math.round((c.eligibility.deductibleMet / c.eligibility.deductibleTotal) * 100) : null },
+    ...c.priorAuths.map(pa => ({
+      name: `Prior auth · ${pa.procedure}`,
+      value: pa.id,
+      status: pa.status === 'approved' ? 'active' : pa.status === 'pending' ? 'pending' : 'opportunity',
+      util: null as number | null,
+    })),
+    ...(c.activeClaimId && activeClaim(c) ? [{
+      name: `Active claim · ${activeClaim(c)!.serviceType}`,
+      value: `$${activeClaim(c)!.billed.toFixed(0)}`,
+      status: activeClaim(c)!.status === 'paid' ? 'active' : activeClaim(c)!.status === 'denied' ? 'opportunity' : 'pending',
+      util: null as number | null,
+    }] : []),
+    ...((c.creditBalance ?? 0) > 0 ? [{ name: 'Refundable credit balance', value: `$${(c.creditBalance ?? 0).toFixed(2)}`, status: 'opportunity', util: null as number | null }] : []),
+  ]
+
+  // Synthesise 12-month revenue (claim billed amounts spread over the year).
+  // Realistic enough to render a trend chart; not load-bearing.
+  const baseMonthly = totalBilled > 0 ? totalBilled / 12 : 50
+  const revenue12m = Array.from({ length: 12 }, (_, i) => Math.max(20, Math.round(baseMonthly * (0.7 + (i % 5) * 0.12))))
+  const balanceTrend = Array.from({ length: 12 }, (_, i) => Math.max(0, Math.round(totalPlanPaid / 12 * (0.6 + (i % 4) * 0.18))))
+
+  // Conversations: derived from callHistory (the canonical record).
+  const conversations: DetailView['conversations'] = c.callHistory.map(h => ({
+    type: callKind(h),
+    date: fmtShortDate(h.date),
+    summary: `${h.topic} — ${h.outcome}.`,
+    sentiment: sentimentFor(h.sentiment),
+    aiDraft: h.agent === 'system' || h.channel === 'email',
+  }))
+
+  // Important dates: roll claim deadlines, prior-auth expiries, appointments,
+  // and eligibility refreshes into one sorted list.
+  const importantDates: DetailView['importantDates'] = []
+  for (const cl of c.claims) {
+    if (cl.appealDeadline) importantDates.push({ label: `Appeal deadline · ${cl.id}`, date: fmtShortDate(cl.appealDeadline), urgency: 'high', icon: 'AlertCircle' })
+  }
+  for (const pa of c.priorAuths) {
+    if (pa.expires) importantDates.push({ label: `Prior auth expires · ${pa.id}`, date: fmtShortDate(pa.expires), urgency: pa.status === 'pending' ? 'high' : 'medium', icon: 'FileText' })
+  }
+  for (const ap of c.appointments) {
+    if (ap.status === 'scheduled') importantDates.push({ label: `${ap.type}`, date: fmtShortDate(ap.date), urgency: 'medium', icon: 'Calendar' })
+  }
+  if (c.eligibility.events[0]?.type === '270/271') {
+    // No explicit renewal date in the roster; flag a generic refresh entry.
+  }
+  if (importantDates.length === 0) importantDates.push({ label: 'No upcoming items', date: '—', urgency: 'low', icon: 'Check' })
+
+  // Preferences: derived from language + planType + notes.
+  const lang = c.language === 'es' ? 'Spanish-preferred (EN OK for documents)' : c.language === 'tl' ? 'Tagalog' : 'English (US)'
+  const contactPref = c.callHistory.some(h => h.channel === 'sms') ? 'SMS + Email · phone OK during business hours' : 'Email + phone · prefers callbacks'
+  const decisionStyle = c.segment === 'Family' ? 'Joint with spouse — include both adults on policy decisions' : c.tier === 'Priority' ? 'Self-directed; values detail + written follow-up' : 'Self-directed; concise verbal explanation preferred'
+  const meetingPref = c.callHistory.some(h => h.topic.toLowerCase().includes('in-person')) ? 'In-person at Dallas Hub when possible' : 'Phone or video; in-person only for benefits-fair events'
+  const keyRel: string[] = [`${c.firstName} ${c.lastName} (member)`]
+  if (c.segment === 'Family') keyRel.push('Spouse (joint policyholder)', 'Dependents on plan')
+  keyRel.push(c.pcp.split(' (')[0])
+  const sensitivities = c.notes || 'None flagged'
+
+  const aiInsight = (() => {
+    const status = c.healthScore >= 80 ? 'strong' : c.healthScore >= 60 ? 'moderate' : 'declining'
+    const flowSuffix = c.flow === 'claim_status' ? `Active claim ${c.activeClaimId ?? '—'} is the focus.` : c.flow === 'eligibility_priorauth' ? 'Eligibility verification + prior-auth coordination is the focus.' : 'Billing/refund resolution is the focus.'
+    const denialNote = deniedClaims > 1 ? ` ${deniedClaims} denials on file — investigate root-cause pattern before another resubmission.` : deniedClaims === 1 ? ' One denied claim — confirm correction path or appeal window with the member.' : ''
+    return `${c.firstName} ${c.lastName} is a ${status} relationship (health ${c.healthScore}). ${flowSuffix}${denialNote} Note: ${c.notes}`
+  })()
+
   return {
-    id, name, segment: 'Individual', tier: 'Standard', cifId: `MEM-${id}-DEMO`,
-    rm: 'Jane Doe', since: '2022', city: 'Dallas, TX', industry: 'Access Health Standard',
-    revenue: 2.0, aum: 4.0, health: 70, creditLimit: 6, utilisation: 55,
-    npa: false, kycDue: '2026-12-01', phone: '+1 (214) 555-0100', email: 'contact@example.com',
-    tags: ['Standard'],
-    scores: { engagement: 68, repayment: 75, growth: 60, loyalty: 70 },
-    products: [
-      { name: 'Active plan',          value: 'PPO',  status: 'active', util: 55 },
-      { name: 'Supplemental rider',   value: 'None', status: 'opportunity' },
-    ],
-    revenue12m: [1.6, 1.7, 1.8, 1.9, 2.0, 1.9, 2.0, 2.1, 2.0, 2.0, 2.0, 2.0],
-    balanceTrend: [3.2, 3.4, 3.6, 3.7, 3.8, 3.9, 4.0, 4.0, 3.9, 4.0, 4.0, 4.0],
-    conversations: [
-      { date: '11 May 2026', type: 'Call', summary: 'Routine check-in. No immediate concerns flagged.', sentiment: 'neutral', aiDraft: false },
-    ],
-    importantDates: [
-      { label: 'Eligibility refresh', date: '01 Dec 2026', urgency: 'medium', icon: 'FileText' },
-    ],
-    preferences: {
-      contact: 'Email preferred',
-      decisionStyle: 'Self-directed',
-      language: 'English',
-      meetingPreference: 'Phone',
-      keyRelationships: ['Member (primary)'],
-      sensitivities: 'None flagged',
-    },
-    aiInsight: 'Stable case. No immediate risks or opportunities flagged. Maintain regular check-in cadence.',
+    cifId: c.memberId,
+    segment: c.segment,
+    tier: c.tier,
+    city: `${c.city}, ${c.state}`,
+    name: `${c.firstName} ${c.lastName}`,
+    rm: 'Jane Doe',
+    since: c.memberSince.slice(0, 4),
+    industry: c.planName,
+    phone: c.phoneDisplay,
+    email: c.email,
+    revenue: Math.round(totalBilled) / 1000,
+    aum: Math.round(totalBilled) / 1000,
+    creditLimit: c.planType.includes('Gold') ? 15 : c.planType.includes('Silver') ? 10 : c.planType === 'Medicare + Supplement' ? 20 : 5,
+    utilisation: c.eligibility.deductibleTotal > 0 ? Math.round((c.eligibility.deductibleMet / c.eligibility.deductibleTotal) * 100) : 0,
+    health: c.healthScore,
+    tags,
+    scores: { engagement: engagementScore, repayment: Math.min(98, repaymentScore + 10), growth: Math.round(growthScore), loyalty: loyaltyScore },
+    products,
+    revenue12m,
+    balanceTrend,
+    conversations,
+    importantDates,
+    preferences: { contact: contactPref, decisionStyle, language: lang, meetingPreference: meetingPref, keyRelationships: keyRel, sensitivities },
+    aiInsight,
   }
 }
 
@@ -232,7 +256,9 @@ const TABS = ['Overview', 'Conversations', 'Products', 'Preferences', 'Dates']
 function CustomerDetailContent({ customerId }: { customerId: string }) {
   const router = useRouter()
   const [tab, setTab] = useState('Overview')
-  const c = CUSTOMER_DETAIL[customerId] ?? getFallback(customerId, `Customer #${customerId}`)
+  const found = findByMemberId(customerId)
+  const customer = found ?? DEFAULT_CUSTOMER
+  const c = toDetailView(customer)
 
   const urgencyOrder: Record<string, number> = { high: 0, medium: 1, low: 2 }
 

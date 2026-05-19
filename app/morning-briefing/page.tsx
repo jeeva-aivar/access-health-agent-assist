@@ -18,8 +18,8 @@ function StatTile({ label, value, sub, accent }: { label: string; value: string;
 
 const SIGNALS = [
   { text: "Garcia family · deductible reset 14 May",       sub: "High signal moment — supplemental rider window", href: '/priority-stack', color: '#d97706' },
-  { text: "Anderson, M. · prior-auth call at 09:30",       sub: "Prep brief ready — review before call",         href: '/voice-intelligence', color: '#2563eb' },
-  { text: "Patel, R. · eligibility overdue — SLA risk",     sub: "Eligibility refresh needed — breach in 48 hrs",  href: '/auto-actions', color: '#dc2626' },
+  { text: "Iyer, M. · prior-auth call at 09:30",       sub: "Prep brief ready — review before call",         href: '/voice-intelligence', color: '#2563eb' },
+  { text: "Verma, R. · eligibility overdue — SLA risk",     sub: "Eligibility refresh needed — breach in 48 hrs",  href: '/auto-actions', color: '#dc2626' },
   { text: "Davis & Park · provider-rate amendment pending", sub: "Contract update needed — close-of-quarter",      href: '/portfolio', color: '#7c3aed' },
 ]
 
@@ -32,7 +32,7 @@ function MorningBriefingContent() {
     <div className="anim-fade" style={{ padding: '32px', maxWidth: 1280, margin: '0 auto' }}>
       {/* Header */}
       <div className="anim-fade-up" style={{ marginBottom: 32 }}>
-        <div className="h2" style={{ color: 'var(--text-primary)' }}>Good morning, Jane.</div>
+        <div className="h2" style={{ color: 'var(--text-primary)' }}>Good morning, Afsheen.</div>
         <div className="body-lg" style={{ color: 'var(--text-secondary)', maxWidth: 720, marginTop: 8 }}>
           Here's your brief for today — priorities, signals, and actions that need your attention. Actions already completed by AI and the ones that need your review are listed below.
         </div>
@@ -128,17 +128,17 @@ function MorningBriefingContent() {
             </div>
           </div>
 
-          {/* Patel eligibility card */}
+          {/* Verma eligibility card */}
           {!app.state.kapoorReassigned && (
             <div className="card density-card anim-fade-up" style={{ padding: 22, animationDelay: '200ms' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span className="dot dot-warning" />
                 <span className="caption" style={{ fontSize: 11 }}>AWAITING REVIEW</span>
               </div>
-              <div style={{ marginTop: 12, fontSize: 14, fontWeight: 600 }}>SLA risk · Patel eligibility</div>
+              <div style={{ marginTop: 12, fontSize: 14, fontWeight: 600 }}>SLA risk · Verma eligibility</div>
               <div className="body" style={{ color: 'var(--text-secondary)', marginTop: 4 }}>48-hr breach predicted. Suggesting reassignment to Aaron Kim.</div>
               <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
-                <button className="btn-secondary" style={{ height: 32, fontSize: 13 }} onClick={() => { app.setKapoor(true); app.toast('Patel eligibility reassigned to Aaron'); app.bumpPoints(50) }}>
+                <button className="btn-secondary" style={{ height: 32, fontSize: 13 }} onClick={() => { app.setKapoor(true); app.toast('Verma eligibility reassigned to Aaron'); app.bumpPoints(50) }}>
                   Approve reassign
                 </button>
                 <button className="btn-ghost" onClick={() => { app.setKapoor(true); app.toast('Dismissed · rule learned') }}>
@@ -153,7 +153,7 @@ function MorningBriefingContent() {
                 <span className="dot dot-success" />
                 <span className="caption" style={{ fontSize: 11, color: 'var(--success)' }}>HANDLED</span>
               </div>
-              <div style={{ marginTop: 12, fontSize: 14, fontWeight: 600 }}>Patel eligibility · reassigned to Aaron</div>
+              <div style={{ marginTop: 12, fontSize: 14, fontWeight: 600 }}>Verma eligibility · reassigned to Aaron</div>
               <div className="body" style={{ color: 'var(--text-secondary)', marginTop: 4 }}>Breach window cleared. Aaron acknowledged at 06:48.</div>
             </div>
           )}
@@ -168,7 +168,7 @@ function MorningBriefingContent() {
               </li>
               <li style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
                 <Icon name="FileText" size={14} style={{ color: 'var(--text-tertiary)', marginTop: 2 }} />
-                <span className="body" style={{ color: 'var(--text-secondary)' }}>Patel renewal docs land overnight</span>
+                <span className="body" style={{ color: 'var(--text-secondary)' }}>Verma renewal docs land overnight</span>
               </li>
               <li style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
                 <Icon name="Sparkles" size={14} style={{ color: 'var(--text-tertiary)', marginTop: 2 }} />

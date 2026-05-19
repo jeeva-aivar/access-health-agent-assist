@@ -21,8 +21,8 @@ function LockTomorrowBlade({ open, onClose, onLock }: {
   onLock: (plan: { id: number; time: string; title: string; type: string; note: string }[]) => void
 }) {
   const initial = [
-    { id: 1, time: '09:00', title: 'Patel, R. — eligibility refresh walkthrough',  type: 'AI',     note: 'Docs landed overnight; brief auto-prepared.' },
-    { id: 2, time: '10:30', title: 'Anderson, M. — prior-auth follow-through',     type: 'AI',     note: 'Adjudication ETA confirmation + records request status.' },
+    { id: 1, time: '09:00', title: 'Verma, R. — eligibility refresh walkthrough',  type: 'AI',     note: 'Docs landed overnight; brief auto-prepared.' },
+    { id: 2, time: '10:30', title: 'Iyer, M. — prior-auth follow-through',     type: 'AI',     note: 'Adjudication ETA confirmation + records request status.' },
     { id: 3, time: '11:30', title: 'Open-enrollment batch — review (38 members)',   type: 'AI',     note: 'Tier-personalized; ready at 09:15.' },
     { id: 4, time: '14:00', title: 'Garcia family — supplemental rider follow-up',  type: 'Manual', note: 'Send Spanish brochure pack.' },
     { id: 5, time: '16:00', title: 'Hub huddle — Thursday weekly',                  type: 'Manual', note: '5-min agenda required.' },
@@ -100,12 +100,12 @@ function SendDebriefBlade({ open, onClose, onSend }: {
 }) {
   const [to, setTo] = useState('michael.reed@accesshealthcare.com')
   const [cc, setCc] = useState('')
-  const [subject, setSubject] = useState('Daily debrief · Tue 19 May · Jane Doe')
+  const [subject, setSubject] = useState('Daily debrief · Tue 19 May · Afsheen Mohammed')
   const [includeStats, setIncludeStats] = useState(true)
   const [includeTimeline, setIncludeTimeline] = useState(true)
   const [includeTomorrow, setIncludeTomorrow] = useState(true)
   const [tone, setTone] = useState('Concise')
-  const [note, setNote] = useState("Strong day. Anderson prior-auth advanced, zero SLA breaches. Flagging the Garcia supplemental follow-up for next week.")
+  const [note, setNote] = useState("Strong day. Iyer prior-auth advanced, zero SLA breaches. Flagging the Garcia supplemental follow-up for next week.")
 
   const previewBody = useMemo(() => {
     const lines: string[] = []
@@ -121,16 +121,16 @@ function SendDebriefBlade({ open, onClose, onSend }: {
     if (includeTimeline) {
       lines.push('')
       lines.push('Highlights:')
-      lines.push('  09:30 — Anderson prior-auth advanced; records received 15:48 (WIN)')
+      lines.push('  09:30 — Iyer prior-auth advanced; records received 15:48 (WIN)')
       lines.push("  10:00 — Sharma group plan onboarding closed (WIN)")
-      lines.push('  12:30 — Patel eligibility breach prevented (SAVED)')
+      lines.push('  12:30 — Verma eligibility breach prevented (SAVED)')
     }
     if (includeTomorrow) {
       lines.push('')
-      lines.push("Tomorrow: 3 member calls before lunch · Patel renewal docs land overnight · open-enrollment batch ready 09:15.")
+      lines.push("Tomorrow: 3 member calls before lunch · Verma renewal docs land overnight · open-enrollment batch ready 09:15.")
     }
     lines.push('')
-    lines.push('— Jane')
+    lines.push('— Afsheen')
     return lines.join('\n')
   }, [note, includeStats, includeTimeline, includeTomorrow])
 
@@ -183,7 +183,7 @@ function DailyDebriefContent() {
   const [planLocked, setPlanLocked] = useState(false)
   const [debriefSent, setDebriefSent] = useState(false)
 
-  const debriefHeadline = "A strong day, *Jane*. Here's how it went."
+  const debriefHeadline = "A strong day, *Afsheen*. Here's how it went."
   const parts = debriefHeadline.split(/(\*[^*]+\*)/g).filter(Boolean)
 
   return (
@@ -233,7 +233,7 @@ function DailyDebriefContent() {
       <div className="card anim-fade-up" style={{ padding: 24, marginTop: 56, borderTop: '2px solid var(--idfc-red)', animationDelay: '1000ms' }}>
         <div className="caption" style={{ color: 'var(--idfc-red)', fontSize: 11 }}>TOMORROW&apos;S PREVIEW</div>
         <div style={{ marginTop: 12, fontSize: 15, lineHeight: 1.6, color: 'var(--text-primary)' }}>
-          3 member calls before lunch · Patel renewal docs land overnight · open-enrollment batch ready for your review at 09:15.
+          3 member calls before lunch · Verma renewal docs land overnight · open-enrollment batch ready for your review at 09:15.
         </div>
       </div>
 

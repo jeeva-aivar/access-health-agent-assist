@@ -2,7 +2,7 @@
 
 Single source of truth for the demo's mock data. Share with the team running the Live Call Assist backend so transcripts, LLM prompts, and KB content stay consistent with what the UI displays.
 
-**Demo scenario:** Inbound patient call about a health insurance claim. Agent (Jane Doe, Dallas Hub) handles the call. Backend pushes WebSocket events; UI renders transcript, SOP tracker, real-time suggestions, and an Ask Assist panel.
+**Demo scenario:** Inbound patient call about a health insurance claim. Agent (Afsheen Mohammed, Dallas Hub) handles the call. Backend pushes WebSocket events; UI renders transcript, SOP tracker, real-time suggestions, and an Ask Assist panel.
 
 Source files in the repo (do not edit these in isolation — if you change one, mirror the change here):
 - `lib/sop-rcm.ts` — Claims SOP definition
@@ -10,7 +10,7 @@ Source files in the repo (do not edit these in isolation — if you change one, 
 - `lib/auto-actions-data.ts` — `COMMS_DATA`, `SYS_DATA` for the auto-actions inbox
 - `app/voice-intelligence/page.tsx` — WS event types, KIND_STYLE, active patient strip
 - `app/portfolio/page.tsx` — patient/member/provider caseload (18 entries)
-- `app/portfolio/[id]/page.tsx` — detail records for Anderson / Garcia / Davis & Park
+- `app/portfolio/[id]/page.tsx` — detail records for Iyer / Garcia / Davis & Park
 - `app/priority-stack/page.tsx` — 22 daily tasks
 - `app/auto-actions/[id]/page.tsx` — extended detail for 4 auto-actions
 - `app/morning-briefing/page.tsx` — 4 signal cards
@@ -56,7 +56,7 @@ type ClientCommand =
 That's the only outbound message. Everything else is server-pushed.
 
 ### Notes
-- **`phone` on `call_start` is the key UI hydration signal.** When the backend sends it (E.164, e.g. `+12145550188`), the UI looks the customer up in `lib/customers.ts` and populates the entire right-hand pane — member identity, active claim, coverage, history, compliance — automatically. If `phone` is absent, the UI keeps the default customer (Anderson) so the demo still works. If the phone is present but unknown to the roster, the UI shows a yellow banner ("Unknown caller phone — verify manually") and keeps the default. See `lib/customers.ts` for the canonical roster (10 demo members across 3 RCM flows).
+- **`phone` on `call_start` is the key UI hydration signal.** When the backend sends it (E.164, e.g. `+12145550188`), the UI looks the customer up in `lib/customers.ts` and populates the entire right-hand pane — member identity, active claim, coverage, history, compliance — automatically. If `phone` is absent, the UI keeps the default customer (Iyer) so the demo still works. If the phone is present but unknown to the roster, the UI shows a yellow banner ("Unknown caller phone — verify manually") and keeps the default. See `lib/customers.ts` for the canonical roster (10 demo members across 3 RCM flows).
 - `memberId` on `call_start` is a fallback identifier — useful when the call came in through a portal/IVR path that captured member ID instead of (or in addition to) phone. Today the UI prefers `phone`.
 - `stepId` on `assist_chunk` / `assist_done` is optional. If sent, it must be one of the SOP step IDs (`verify`, `status`, `follow_up`, `wrap`). The UI shows a "Step N" chip when present.
 - `sop_state` is optional. If the backend doesn't push it, the UI infers step state client-side from transcript text via the `completionCue` regexes (see SOP section below).
@@ -136,7 +136,7 @@ This is the contract between the backend prompt and the on-screen step tracker. 
 
 | Field | Value |
 |---|---|
-| Name | Jane Doe |
+| Name | Afsheen Mohammed |
 | Role | RCM Agent · Dallas Hub |
 | Initials | JD |
 | Employee # | AH-44219 |
@@ -158,7 +158,7 @@ This is the contract between the backend prompt and the on-screen step tracker. 
 | Initials | MR |
 | Role | Team Lead |
 | Email | `michael.reed@accesshealthcare.com` |
-| Quote (shown on briefing) | "Anderson first, prior-auth backlog second, Q4 audit prep critical for tomorrow." |
+| Quote (shown on briefing) | "Iyer first, prior-auth backlog second, Q4 audit prep critical for tomorrow." |
 | Alignment indicator | ALIGNED 4/4 · 3 taps to lock |
 
 ### 3.3 Leaderboard (rivals/peers)
@@ -167,10 +167,10 @@ This is the contract between the backend prompt and the on-screen step tracker. 
 |---|---|---|---|---|
 | Anjali Desai | 2840 | 10840 | 32140 | Week #1 |
 | Rohit Kulkarni | 2612 | 11240 | 31822 | Month #1 |
-| **Jane Doe (you)** | **2418** | **10982** | **29918** | Week #3, Month #2, Quarter #4 |
+| **Afsheen Mohammed (you)** | **2418** | **10982** | **29918** | Week #3, Month #2, Quarter #4 |
 | Michael Reed | 2308 | 8980 | 28210 | |
 | Neha Iyer | 2140 | 9410 | 30640 | |
-| Arjun Patel | 2012 | 8412 | 26080 | |
+| Arjun Verma | 2012 | 8412 | 26080 | |
 
 ---
 
@@ -182,13 +182,13 @@ The full demo roster lives in **`lib/customers.ts`** as a typed `CUSTOMERS: Cust
 
 | # | Phone (E.164) | Display | Member ID | Name | Flow | Call reason |
 |---|---|---|---|---|---|---|
-| 1 | `+12145550188` | (214) 555-0188 | ANH-2418-4421 | Michael Anderson | `claim_status` | Following up on prior-auth MRI claim (in review) |
-| 2 | `+17135550212` | (713) 555-0212 | LPZ-3318-2204 | Sarah Lopez | `claim_status` | Appeal options for denied claim (code N290) |
+| 1 | `+12145550188` | (214) 555-0188 | ANH-2418-4421 | Vishnu Iyer | `claim_status` | Following up on prior-auth MRI claim (in review) |
+| 2 | `+17135550212` | (713) 555-0212 | LPZ-3318-2204 | Jeeva Sharma | `claim_status` | Appeal options for denied claim (code N290) |
 | 3 | `+12025550143` | (202) 555-0143 | CHN-7714-0908 | Robert Chen | `claim_status` | EOB explanation request (completed claim) |
-| 4 | `+14045550199` | (404) 555-0199 | WIL-6629-1812 | Marcus Williams | `eligibility_priorauth` | Confirm MRI prior-auth before tomorrow's appt |
+| 4 | `+14045550199` | (404) 555-0199 | WIL-6629-1812 | Muthu Krishnan | `eligibility_priorauth` | Confirm MRI prior-auth before tomorrow's appt |
 | 5 | `+16175550234` | (617) 555-0234 | OCO-4488-3306 | Jennifer O'Connor | `eligibility_priorauth` | First PCP visit — coverage check |
 | 6 | `+12065550167` | (206) 555-0167 | KIM-5512-7720 | David Kim | `billing_refund` | Refund timeline on credit balance |
-| 7 | `+13035550155` | (303) 555-0155 | PTL-7723-0011 | Aisha Patel | `billing_refund` | Surprise bill — suspected NSA case |
+| 7 | `+13035550155` | (303) 555-0155 | PTL-7723-0011 | Manish Verma | `billing_refund` | Surprise bill — suspected NSA case |
 | 8 | `+19155550112` | (915) 555-0112 | HRN-3344-2255 | Luis Hernandez | `eligibility_priorauth` | Schedule cardiology + start PA |
 | 9 | `+12015550178` | (201) 555-0178 | WAL-6644-1188 | Maria Walker (family) | `claim_status` | 3 repeat denials (M127 subscriber-ID mismatch) |
 | 10 | `+16025550189` | (602) 555-0189 | BRK-9911-4422 | Olivia Brooks | `eligibility_priorauth` | Pre-op OOP projection (hip arthroplasty) |
@@ -198,8 +198,8 @@ The full demo roster lives in **`lib/customers.ts`** as a typed `CUSTOMERS: Cust
 | Flow | Customers | What the LLM should do |
 |---|---|---|
 | `claim_status` | 1 (in review), 2 (denied), 3 (completed), 9 (repeated denial pattern) | Standard 4-step SOP. Branch the follow-up on status: timeline for in-progress, appeal options for denied, EOB walkthrough for completed. For Walker (#9), call out the M127 root cause pattern explicitly. |
-| `eligibility_priorauth` | 4, 5, 8, 10 | Verify caller → confirm eligibility from 270/271 → state prior-auth status → schedule or inform. For Williams (#4) flag urgency (service tomorrow). For Brooks (#10) emphasize Plan G coverage = ~$240 OOP. |
-| `billing_refund` | 6 (credit balance), 7 (surprise bill) | Verify caller → look up balance/claim → explain breakdown (Kim: refund timeline; Patel: NSA dispute path). For Patel surface NSA protection — anesthesia OON at in-network facility. |
+| `eligibility_priorauth` | 4, 5, 8, 10 | Verify caller → confirm eligibility from 270/271 → state prior-auth status → schedule or inform. For Krishnan (#4) flag urgency (service tomorrow). For Brooks (#10) emphasize Plan G coverage = ~$240 OOP. |
+| `billing_refund` | 6 (credit balance), 7 (surprise bill) | Verify caller → look up balance/claim → explain breakdown (Kim: refund timeline; Verma: NSA dispute path). For Verma surface NSA protection — anesthesia OON at in-network facility. |
 
 ### Per-customer rich detail
 
@@ -226,7 +226,7 @@ When `call_start` fires, the customer strip and SopRail render with these defaul
 ```yaml
 customer_strip:
   avatar: "MA"
-  name: "Mr. Michael Anderson"
+  name: "Mr. Vishnu Iyer"
   member_id: "ANH-2418-4421"
   payer: "BCBS TX · PPO"
   active_claim: "CLM-9047-2206"
@@ -238,12 +238,12 @@ right_rail_tabs:
   - "Member"     ← patient identity (full name, DOB, member ID, group, plan, PCP)
   - "Claim"      ← active claim CLM-9047-2206 with billed/allowed/paid breakdown
   - "Coverage"   ← BCBS TX PPO Gold benefits (deductible, OOP max, copay, prior auth)
-  - "History"    ← last 5 claims (see Anderson claim history above)
+  - "History"    ← last 5 claims (see Iyer claim history above)
   - "Compliance" ← HIPAA verification + recording consent + auto-redaction state
 
 waiting_state_queue:
-  - { time: "09:30", customer: "Michael Anderson",  type: "Claim status · CLM-9047",   next: true }
-  - { time: "11:00", customer: "Sarah Lopez",       type: "Denied claim · appeal window" }
+  - { time: "09:30", customer: "Vishnu Iyer",  type: "Claim status · CLM-9047",   next: true }
+  - { time: "11:00", customer: "Jeeva Sharma",       type: "Denied claim · appeal window" }
   - { time: "14:00", customer: "David Kim",         type: "EOB request · prior visit" }
 ```
 
@@ -258,7 +258,7 @@ Daily overnight activity the AI has performed or held for review. Items have a `
 | ID | Time | Title | Badge | Audience |
 |---|---|---|---|---|
 | c0 | 04:12 | Auto-replied to Baylor Scott & White portal (operative report received) | SENT | Provider |
-| c1 | 05:48 | Drafted reply to Lopez · denied claim appeal | **REVIEW** | Member (held for nuance — appeal window question) |
+| c1 | 05:48 | Drafted reply to Sharma · denied claim appeal | **REVIEW** | Member (held for nuance — appeal window question) |
 | c2 | 06:02 | Eligibility reminder · Singh, H. — pre-filled refresh (expires 7 days) | SENT | Member |
 | c3 | 06:14 | Eligibility reminder · Reyes Group plan (expires 11 days) | SENT | Group |
 | c4 | 06:30 | SMS · Vera Carter benefits desk (out-of-office ack, follow-up 10:00) | SENT | Member |
@@ -269,9 +269,9 @@ Daily overnight activity the AI has performed or held for review. Items have a `
 
 | ID | Time | Title | Badge |
 |---|---|---|---|
-| s0 | 04:48 | EHR notes synced (Anderson call → Epic) | DONE |
-| s1 | 05:14 | Claim status updated · CLM-8902 Lopez — auto-adjudication cleared | DONE |
-| s2 | 06:02 | SLA risk · Patel eligibility verification — 48-hr breach predicted | **REVIEW** (suggests reassign to Aaron Kim) |
+| s0 | 04:48 | EHR notes synced (Iyer call → Epic) | DONE |
+| s1 | 05:14 | Claim status updated · CLM-8902 Sharma — auto-adjudication cleared | DONE |
+| s2 | 06:02 | SLA risk · Verma eligibility verification — 48-hr breach predicted | **REVIEW** (suggests reassign to Aaron Kim) |
 | s3 | 06:24 | Cross-sell signal · Garcia family — deductible reset, supplemental fit | FLAGGED |
 | s4 | 06:48 | T&E ready · Houston site visit ($182.40, 12 receipts) | READY |
 
@@ -284,7 +284,7 @@ Lives in `app/priority-stack/page.tsx`. Each task has `source` (`ai` / `mgr` / `
 ### AI priority
 | Time | Customer | Title | Tag | Value |
 |---|---|---|---|---|
-| 09:30 | Anderson, M. | Prior-auth follow-up · CLM-9047 | HIGHEST RISK | $3,420 |
+| 09:30 | Iyer, M. | Prior-auth follow-up · CLM-9047 | HIGHEST RISK | $3,420 |
 | 11:00 | Denials Committee | Quarterly review · your call | DECISION | — |
 | 15:00 | Q4 caseload | Review & sign-off | 90 MIN SAVED | — |
 | 16:00 | Garcia family | Benefits walk-through · deductible reset | NBA | 4-wk window |
@@ -294,7 +294,7 @@ Lives in `app/priority-stack/page.tsx`. Each task has `source` (`ai` / `mgr` / `
 |---|---|---|
 | 08:45 | Hub huddle | Stand-up · brief Michael |
 | 10:15 | Baylor Scott & White | Provider records follow-up ($85K) |
-| 12:00 | Lopez · denial | Appeal-window draft · sign off |
+| 12:00 | Sharma · denial | Appeal-window draft · sign off |
 | 13:30 | Member outreach | Open-enrollment campaign approval |
 | 14:30 | Sharma group plan | Onboarding checklist · escalation ($210K) |
 | 17:30 | Michael Reed | EOD debrief · 1:1 |
@@ -303,7 +303,7 @@ Lives in `app/priority-stack/page.tsx`. Each task has `source` (`ai` / `mgr` / `
 | Time | Customer | Title | Channel |
 |---|---|---|---|
 | 07:30 | Inbox triage | Clear overnight queue | Email (DONE) |
-| 10:30 | Patel, R. | Eligibility refresh · check-in | Call |
+| 10:30 | Verma, R. | Eligibility refresh · check-in | Call |
 | 11:45 | Vera Carter | Confirm callback window | SMS |
 | 12:30 | Iyer, L. | Plan renewal · confirm tier ($418/mo) | Email |
 | 14:00 | Singh, H. | Eligibility refresh · call | Call |
@@ -330,11 +330,11 @@ signals:
     sub:  "High signal moment — supplemental rider window"
     href: /priority-stack
     color: "#d97706"
-  - text: "Anderson, M. · prior-auth call at 09:30"
+  - text: "Iyer, M. · prior-auth call at 09:30"
     sub:  "Prep brief ready — review before call"
     href: /voice-intelligence
     color: "#2563eb"
-  - text: "Patel, R. · eligibility overdue — SLA risk"
+  - text: "Verma, R. · eligibility overdue — SLA risk"
     sub:  "Eligibility refresh needed — breach in 48 hrs"
     href: /auto-actions
     color: "#dc2626"
@@ -356,10 +356,10 @@ Overnight stats shown on Briefing & Auto-actions:
 
 | Time | Headline | Detail | Outcome | Date |
 |---|---|---|---|---|
-| 09:30 | Anderson call · sentiment swung warm | +18 points; corrected claim filed at 15:48 | WIN | 9 May |
+| 09:30 | Iyer call · sentiment swung warm | +18 points; corrected claim filed at 15:48 | WIN | 9 May |
 | 10:00 | Sharma group plan · $12K closed | Plan administrator video congratulation in 27 min | WIN | 8 May |
 | 11:00 | 3 meetings, 1 you | Avatars debriefed. Zero context lost | MULTIPLIED | 8 May |
-| 12:30 | Patel eligibility · breach prevented | Reassigned to Aaron 48 hrs ahead of risk window | SAVED | 7 May |
+| 12:30 | Verma eligibility · breach prevented | Reassigned to Aaron 48 hrs ahead of risk window | SAVED | 7 May |
 | 16:00 | Garcia family · benefits walk landed | Supplemental rider signal converted, follow-up Wed | SURFACED | 28 Apr |
 
 ---
@@ -389,7 +389,7 @@ revenue_trend_6mo:  # $K/month
   - { month: May, revenue: 410 }
 
 top_movers:
-  - { name: "Anderson, M.",       delta: "+8%",  direction: up,   note: "Prior-auth advanced" }
+  - { name: "Iyer, M.",       delta: "+8%",  direction: up,   note: "Prior-auth advanced" }
   - { name: "Sharma group plan",  delta: "+12%", direction: up,   note: "Onboarding closed" }
   - { name: "Bose, A.",           delta: "-6%",  direction: down, note: "Denial flagged" }
   - { name: "Carter family",      delta: "-3%",  direction: down, note: "Eligibility stalled — reassign" }
@@ -409,8 +409,8 @@ kpis:
 | Time | Title | With | Type | AI Score | Reason |
 |---|---|---|---|---|---|
 | 08:45 | Hub huddle | Michael Reed | In-person | 38 | Routine standup |
-| 09:30 | Prior-auth call · Anderson, M. | Michael Anderson | Call | 92 | High-value member call |
-| 11:00 | Denials committee | Hub team | In-person | 87 | Decision gate · Patel case |
+| 09:30 | Prior-auth call · Iyer, M. | Vishnu Iyer | Call | 92 | High-value member call |
+| 11:00 | Denials committee | Hub team | In-person | 87 | Decision gate · Verma case |
 | 11:00 | Hub standup | Ops team | Google Meet | 44 | Status round (avatar can attend) |
 | 14:00 | Quarterly review · Davis & Park | Davis & Park practice | Google Meet | 71 | Provider contract review |
 | 15:00 | Q4 caseload sign-off | Internal | Teams | 55 | Doc review |
@@ -426,10 +426,10 @@ Each has its own form with defaults. Backend currently does NOT power these — 
 | Slug | Label | Default member | Default action |
 |---|---|---|---|
 | `pitch-builder` | Benefits Pitch Builder | Garcia family | Supplemental rider cross-sell |
-| `meeting-preparer` | Meeting Preparer | Anderson, M. | Benefits walk-through (09:30) |
-| `earnings-reviewer` | Denials Reviewer | Anderson + Lopez | Denial code N290, Q2-2026 |
+| `meeting-preparer` | Meeting Preparer | Iyer, M. | Benefits walk-through (09:30) |
+| `earnings-reviewer` | Denials Reviewer | Iyer + Sharma | Denial code N290, Q2-2026 |
 | `model-builder` | Coverage Planner | Garcia family | OOP minimisation, plan year 2026 |
-| `memo-maker` | Appeal Drafter | Lopez, S. + CLM-8902-1404 | Formal appeal letter for denial N290 |
+| `memo-maker` | Appeal Drafter | Sharma, S. + CLM-8902-1404 | Formal appeal letter for denial N290 |
 
 Suggestion `kind` color/label remap for healthcare:
 
@@ -447,14 +447,14 @@ Suggestion `kind` color/label remap for healthcare:
 
 ### Notifications (top-right bell)
 1. Supervisor aligned on stack — All 4 priorities locked for the shift (success)
-2. SLA risk · Anderson auth — Prior-auth status overdue, review queued (warning)
+2. SLA risk · Iyer auth — Prior-auth status overdue, review queued (warning)
 3. Sentiment swing · Garcia — +18 pts after benefits clarification (info)
-4. Patel records received — Medical records auto-attached to case (success)
+4. Verma records received — Medical records auto-attached to case (success)
 
 ### Search seed (⌘K)
-- Patient: Anderson, M. · Prior-auth pending
+- Patient: Iyer, M. · Prior-auth pending
 - Patient: Garcia family · Eligibility · Cigna
-- Patient: Patel, R. · Claim resubmission Q4
+- Patient: Verma, R. · Claim resubmission Q4
 - Task: Q4 caseload review · sign-off
 - Doc: Eligibility verification SOP v3.1
 - Doc: Claims denial appeal pre-read · 12 pages
@@ -482,10 +482,10 @@ Inferred from the SOP, member sensitivities, and the Ask Assist prompt placehold
 When walking a stakeholder through the app, the on-screen order is:
 
 1. `/login` → demo credentials button → OTP step → `/morning-briefing`
-2. `/priority-stack` → click Anderson 09:30 task
+2. `/priority-stack` → click Iyer 09:30 task
 3. `/voice-intelligence` → live transcript starts → SOP rail advances → Ask Assist round-trip
-4. `/portfolio/1` (Anderson detail) → show claim history + AI insight card
-5. `/auto-actions` → open `c1` (Lopez held-for-review draft) → show compliance audit trail
+4. `/portfolio/1` (Iyer detail) → show claim history + AI insight card
+5. `/auto-actions` → open `c1` (Sharma held-for-review draft) → show compliance audit trail
 6. `/daily-debrief` → wrap with the day's win/save outcomes
 
 Backend should be reachable and producing realistic claims-call transcripts at step 3. If the WS is down, the page degrades gracefully (header shows red dot, no crashes).

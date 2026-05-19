@@ -30,7 +30,7 @@ const MONTHS = [
 ]
 
 const COHORTS = [
-  { name: 'Anderson, M.',         delta: '+8%',  direction: 'up',   note: 'Prior-auth advanced' },
+  { name: 'Iyer, V.',             delta: '+8%',  direction: 'up',   note: 'Prior-auth advanced' },
   { name: 'Sharma group plan',    delta: '+12%', direction: 'up',   note: 'Onboarding closed' },
   { name: 'Bose, A.',             delta: '-6%',  direction: 'down', note: 'Denial flagged' },
   { name: 'Carter family',        delta: '-3%',  direction: 'down', note: 'Eligibility stalled — reassign' },

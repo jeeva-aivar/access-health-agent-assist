@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { AppShell } from '@/components/shared/AppShell'
 import { SopRail } from '@/components/voice/SopRail'
-import { DEFAULT_WORKFLOW } from '@/lib/sop-rcm'
+import { DEFAULT_WORKFLOW, workflowForFlow, type SopWorkflow } from '@/lib/sop-rcm'
 import { inferSopState, type SopState } from '@/lib/sop-state'
 import {
   CUSTOMERS, DEFAULT_CUSTOMER, findByPhone, activeClaim,
@@ -34,8 +34,6 @@ type ServerEvent =
   | { type: 'transcript'; label: Role; text: string; callOffset?: string }
   | { type: 'assist_chunk'; suggestionId: string; chunk: string; stepId?: string }
   | { type: 'assist_done'; suggestionId: string; kind: AlertKind; latencyMs: number; timeToFirstToken: number; inputTokens: number; outputTokens: number; fullText: string; stepId?: string }
-  | { type: 'ask_chunk'; askId: string; chunk: string }
-  | { type: 'ask_done'; askId: string; fullText: string }
   | { type: 'sop_state'; workflowId?: string; currentStepIndex: number; completedStepIds: string[] }
 
 // ─── State machine ────────────────────────────────────────────────────────────
@@ -45,7 +43,6 @@ interface State {
   turns: Turn[]
   partials: Record<Role, string>
   suggestions: Record<string, Suggestion>
-  askMessages: { id: string; role: 'user' | 'assistant'; text: string; done: boolean }[]
   sopFromServer: SopState | null
   customer: Customer            // hydrated from phone on call_start (or picker)
   unresolvedPhone: string | null  // backend sent a phone we don't recognise
@@ -53,7 +50,7 @@ interface State {
 
 const init: State = {
   call: { status: 'waiting', callSid: null, startedAt: null, endedAt: null },
-  turns: [], partials: { CUSTOMER: '', AGENT: '' }, suggestions: {}, askMessages: [],
+  turns: [], partials: { CUSTOMER: '', AGENT: '' }, suggestions: {},
   sopFromServer: null,
   customer: DEFAULT_CUSTOMER,
   unresolvedPhone: null,
@@ -67,9 +64,6 @@ type Action =
   | { type: 'turn'; label: Role; text: string }
   | { type: 'assistChunk'; id: string; chunk: string; stepId?: string }
   | { type: 'assistDone'; id: string; kind: AlertKind; latencyMs: number; timeToFirstToken: number; inputTokens: number; outputTokens: number; stepId?: string }
-  | { type: 'askChunk'; id: string; chunk: string }
-  | { type: 'askDone'; id: string; fullText: string }
-  | { type: 'askSend'; id: string; question: string }
   | { type: 'sopState'; state: SopState }
 
 function reducer(s: State, a: Action): State {
@@ -98,17 +92,6 @@ function reducer(s: State, a: Action): State {
       return { ...s, suggestions: { ...s.suggestions, [a.id]: { ...existing, done: true, kind: a.kind, latencyMs: a.latencyMs, timeToFirstToken: a.timeToFirstToken, inputTokens: a.inputTokens, outputTokens: a.outputTokens, stepId: a.stepId ?? existing.stepId } } }
     }
     case 'sopState': return { ...s, sopFromServer: a.state }
-    case 'askSend': return { ...s, askMessages: [...s.askMessages, { id: a.id, role: 'user', text: a.question, done: true }] }
-    case 'askChunk': {
-      const msgs = s.askMessages; const last = msgs[msgs.length - 1]
-      if (last?.role === 'assistant' && last.id === a.id) return { ...s, askMessages: [...msgs.slice(0, -1), { ...last, text: last.text + a.chunk }] }
-      return { ...s, askMessages: [...msgs, { id: a.id, role: 'assistant', text: a.chunk, done: false }] }
-    }
-    case 'askDone': {
-      const msgs = s.askMessages; const last = msgs[msgs.length - 1]
-      if (last?.role === 'assistant') return { ...s, askMessages: [...msgs.slice(0, -1), { ...last, text: a.fullText, done: true }] }
-      return s
-    }
     default: return s
   }
 }
@@ -152,8 +135,8 @@ function useAgentSocket(onEvent: (e: ServerEvent) => void) {
     }
   }, [])
 
-  const send = useCallback((cmd: object) => { if (wsRef.current?.readyState === WebSocket.OPEN) wsRef.current.send(JSON.stringify(cmd)) }, [])
-  return { status, send }
+  // Receive-only socket. The UI no longer sends commands (Ask Assist removed).
+  return { status }
 }
 
 // ─── Helper fns ───────────────────────────────────────────────────────────────
@@ -229,7 +212,7 @@ function TurnRow({ turn, suggestions, callStartedAt, customer }: { turn: Turn; s
     <div style={{ padding: '12px 0', borderBottom: '1px solid var(--border-subtle)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
         <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: isCustomer ? 'var(--ah-emerald)' : 'var(--text-secondary)' }}>
-          {isCustomer ? `Caller · ${customer.lastName}` : 'Agent · Jane'}
+          {isCustomer ? `Caller · ${customer.lastName}` : 'Agent · Afsheen'}
         </span>
         {ts && <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: 'var(--text-tertiary)' }}>{ts}</span>}
         {isCustomer && <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: 'var(--text-tertiary)', marginLeft: 'auto' }}>Amazon Connect · {customer.state} bridge</span>}
@@ -332,7 +315,7 @@ function TranscriptPanel({ turns, partials, suggestionsByTurn, call, customer, u
         )}
         {partials.AGENT && (
           <div style={{ padding: '10px 0' }}>
-            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>Agent · Jane</span>
+            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>Agent · Afsheen</span>
             <p style={{ fontSize: 14.5, fontStyle: 'italic', color: 'var(--text-tertiary)', margin: '6px 0 0' }}>{partials.AGENT}</p>
           </div>
         )}
@@ -351,7 +334,7 @@ function TranscriptPanel({ turns, partials, suggestionsByTurn, call, customer, u
       <div style={{ padding: '10px 20px', borderTop: '1px solid var(--border-subtle)', background: 'var(--bg-subtle)', display: 'flex', alignItems: 'center', gap: 10, fontFamily: "'JetBrains Mono',monospace", fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-tertiary)', flexShrink: 0 }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <span style={{ width: 8, height: 8, borderRadius: '50%', background: isLive ? 'var(--ah-emerald)' : 'var(--text-tertiary)', animation: isLive ? 'pulse 1.5s infinite' : 'none' }} />
-          {isLive ? 'Mic open · Jane' : 'Mic idle'}
+          {isLive ? 'Mic open · Afsheen' : 'Mic idle'}
         </span>
         <span style={{ color: 'var(--border-subtle)' }}>·</span>
         <span>SNR 38 dB · EN-US</span>
@@ -418,10 +401,8 @@ function MemberTab({ customer }: { customer: Customer }) {
       </div>
       <SectionHead tag="Voice AI">Verification status</SectionHead>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-        <MetricBox label="Name confirmed" value="✓" positive />
         <MetricBox label="Member ID" value="✓" positive />
-        <MetricBox label="Claim ID" value={customer.activeClaimId ? '·' : '—'} sub={customer.activeClaimId ? 'pending' : 'n/a'} />
-        <MetricBox label="HIPAA cleared" value="—" sub="awaits 3rd ID" />
+        <MetricBox label="Name confirmed" value="✓" positive />
       </div>
       <SectionHead>Contact preferences</SectionHead>
       <div style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 8, padding: '4px 12px' }}>
@@ -600,7 +581,7 @@ function ComplianceTab({ customer }: { customer: Customer }) {
   )
 }
 
-function RightRailPanel({ sopState, latestSuggestion, customer }: { sopState: SopState; latestSuggestion?: { text: string; kind?: string } | null; customer: Customer }) {
+function RightRailPanel({ workflow, sopState, latestSuggestion, customer }: { workflow: SopWorkflow; sopState: SopState; latestSuggestion?: { text: string; kind?: string } | null; customer: Customer }) {
   const [active, setActive] = useState<RailTab>('member')
   const flowLabel = customer.flow === 'claim_status' ? 'Claim status' : customer.flow === 'eligibility_priorauth' ? 'Eligibility + PA' : 'Billing / refund'
   return (
@@ -614,7 +595,7 @@ function RightRailPanel({ sopState, latestSuggestion, customer }: { sopState: So
       </div>
 
       <div style={{ padding: '12px 12px 0', flexShrink: 0 }}>
-        <SopRail state={sopState} latestSuggestion={latestSuggestion ?? null} />
+        <SopRail workflow={workflow} state={sopState} latestSuggestion={latestSuggestion ?? null} />
       </div>
 
       <div style={{ display: 'flex', gap: 4, padding: '10px 12px 0', borderBottom: '1px solid var(--border-subtle)', flexShrink: 0, overflowX: 'auto' }}>
@@ -635,65 +616,6 @@ function RightRailPanel({ sopState, latestSuggestion, customer }: { sopState: So
         {active === 'coverage'   && <CoverageTab customer={customer} />}
         {active === 'history'    && <HistoryTab customer={customer} />}
         {active === 'compliance' && <ComplianceTab customer={customer} />}
-      </div>
-    </div>
-  )
-}
-
-// ─── Ask panel ────────────────────────────────────────────────────────────────
-
-function AskPanel({ messages, onAsk, wsStatus, customer }: {
-  messages: { id: string; role: 'user' | 'assistant'; text: string; done: boolean }[]
-  onAsk: (q: string) => void
-  wsStatus: ConnectionStatus
-  customer: Customer
-}) {
-  const [q, setQ] = useState('')
-  const endRef = useRef<HTMLDivElement>(null)
-  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
-
-  const submit = () => { const trimmed = q.trim(); if (!trimmed) return; onAsk(trimmed); setQ('') }
-  const isReady = wsStatus === 'connected'
-  const disabled = !q.trim() || !isReady
-
-  return (
-    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: 14, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-        <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10.5, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ah-emerald)' }}>◆ Ask Access Health AI</span>
-        <span style={{ marginLeft: 'auto', width: 7, height: 7, borderRadius: '50%', background: wsStatus === 'connected' ? '#16a34a' : wsStatus === 'connecting' ? '#d97706' : '#dc2626', flexShrink: 0 }} />
-        <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9.5, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{wsStatus}</span>
-      </div>
-
-      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {messages.length === 0 && (
-          <div style={{ color: 'var(--text-tertiary)', fontSize: 12.5, lineHeight: 1.6 }}>
-            Ask anything about <strong>{customer.firstName}</strong> — claim status, plan benefits, prior auth, appeal window, EOB. Answers come from the Access Health KB.
-          </div>
-        )}
-        {messages.map(m => (
-          <div key={m.id} style={{
-            alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '90%',
-            background: m.role === 'user' ? 'var(--ah-moss)' : 'var(--bg-subtle)',
-            border: `1px solid ${m.role === 'user' ? 'transparent' : 'var(--border-subtle)'}`,
-            borderRadius: 10, padding: '8px 12px',
-            color: m.role === 'user' ? '#fff' : 'var(--text-primary)', fontSize: 13, lineHeight: 1.5,
-          }}>{m.text}</div>
-        ))}
-        <div ref={endRef} />
-      </div>
-
-      <div style={{ padding: '10px 12px', borderTop: '1px solid var(--border-subtle)', display: 'flex', gap: 8, flexShrink: 0 }}>
-        <input
-          value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && submit()}
-          placeholder={`Ask about ${customer.firstName}…`}
-          style={{ flex: 1, background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: 'var(--text-primary)', outline: 'none' }}
-        />
-        <button onClick={submit} disabled={disabled} style={{
-          background: 'var(--ah-moss)', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px',
-          fontFamily: "'JetBrains Mono',monospace", fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
-          cursor: disabled ? 'not-allowed' : 'pointer',
-          opacity: disabled ? 0.5 : 1,
-        }}>Ask</button>
       </div>
     </div>
   )
@@ -793,13 +715,11 @@ function VoiceIntelligenceContent() {
       case 'transcript':   dispatch({ type: 'turn', label: e.label, text: e.text }); break
       case 'assist_chunk': dispatch({ type: 'assistChunk', id: e.suggestionId, chunk: e.chunk, stepId: e.stepId }); break
       case 'assist_done':  dispatch({ type: 'assistDone', id: e.suggestionId, kind: e.kind, latencyMs: e.latencyMs, timeToFirstToken: e.timeToFirstToken, inputTokens: e.inputTokens, outputTokens: e.outputTokens, stepId: e.stepId }); break
-      case 'ask_chunk':    dispatch({ type: 'askChunk', id: e.askId, chunk: e.chunk }); break
-      case 'ask_done':     dispatch({ type: 'askDone', id: e.askId, fullText: e.fullText }); break
       case 'sop_state':    dispatch({ type: 'sopState', state: { currentStepIndex: e.currentStepIndex, completedStepIds: e.completedStepIds } }); break
     }
   }, [])
 
-  const { status: wsStatus, send } = useAgentSocket(handleEvent)
+  const { status: wsStatus } = useAgentSocket(handleEvent)
 
   const suggestionsByTurn = useMemo(() => {
     const map = new Map<number, Suggestion[]>()
@@ -811,15 +731,14 @@ function VoiceIntelligenceContent() {
     return map
   }, [state.suggestions])
 
-  const handleAsk = useCallback((q: string) => {
-    const id = `ask-${Date.now()}`
-    dispatch({ type: 'askSend', id, question: q })
-    send({ type: 'ask', askId: id, question: q })
-  }, [send])
+  // Workflow chosen per the active customer's flow (claim_status /
+  // eligibility_priorauth / billing_refund). Step IDs are stable across all
+  // three so backend-sent stepIds on assist_* events still resolve correctly.
+  const workflow: SopWorkflow = useMemo(() => workflowForFlow(state.customer.flow), [state.customer.flow])
 
   const inferredSopState = useMemo(
-    () => inferSopState(DEFAULT_WORKFLOW, state.turns.map(t => t.text)),
-    [state.turns],
+    () => inferSopState(workflow, state.turns.map(t => t.text)),
+    [workflow, state.turns],
   )
   const effectiveSopState: SopState = state.sopFromServer ?? inferredSopState
 
@@ -853,18 +772,14 @@ function VoiceIntelligenceContent() {
         </div>
       </div>
 
-      <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '1fr 360px', gridTemplateRows: '1fr 260px', gap: 16 }}>
-        {/* Transcript — spans both rows on left */}
-        <div style={{ gridRow: '1 / 3' }}>
+      <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '1fr 360px', gridTemplateRows: '1fr', gap: 16 }}>
+        {/* Transcript — left column (scrolls independently) */}
+        <div>
           <TranscriptPanel turns={state.turns} partials={state.partials} suggestionsByTurn={suggestionsByTurn} call={state.call} customer={state.customer} unresolvedPhone={state.unresolvedPhone} />
         </div>
-        {/* Right rail top */}
+        {/* Right rail — full height (scrolls independently) */}
         <div>
-          <RightRailPanel sopState={effectiveSopState} latestSuggestion={latestSuggestion} customer={state.customer} />
-        </div>
-        {/* Ask panel bottom right */}
-        <div>
-          <AskPanel messages={state.askMessages} onAsk={handleAsk} wsStatus={wsStatus} customer={state.customer} />
+          <RightRailPanel workflow={workflow} sopState={effectiveSopState} latestSuggestion={latestSuggestion} customer={state.customer} />
         </div>
       </div>
     </div>

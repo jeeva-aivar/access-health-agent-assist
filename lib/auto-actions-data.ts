@@ -50,7 +50,7 @@ Thanks for the prompt response. We have received the operative report and pre-op
 The package has been routed to our Coding team (cc'd) for medical-necessity review. We expect adjudication to conclude by 22 May 2026 and will notify the patient on resolution.
 
 Warm regards,
-Jane Doe
+Afsheen Mohammed
 Access Healthcare · Dallas Hub`,
       confidence: 94,
       reasoning: [
@@ -64,21 +64,21 @@ Access Healthcare · Dallas Hub`,
   },
   {
     id: 'c1', which: 'c',
-    time: '05:48', title: 'Drafted reply to Lopez · denied claim appeal.', detail: 'Awaiting your nuance — appeal timing. Held for 09:15.',
+    time: '05:48', title: 'Drafted reply to Sharma · denied claim appeal.', detail: 'Awaiting your nuance — appeal timing. Held for 09:15.',
     badge: 'REVIEW', needsAction: true,
     ai: {
-      kind: 'DRAFT HELD FOR REVIEW', to: 'Sarah Lopez <s.lopez@example.com>', subject: 'RE: Appeal options · CLM-8902 · denial code N290',
-      originalEmail: `From: Sarah Lopez <s.lopez@example.com>
+      kind: 'DRAFT HELD FOR REVIEW', to: 'Jeeva Sharma <jeeva.sharma@example.com>', subject: 'RE: Appeal options · CLM-8902 · denial code N290',
+      originalEmail: `From: Jeeva Sharma <jeeva.sharma@example.com>
 Date: 05:31 CT · 19 May 2026
 Subject: Appeal options · CLM-8902
 
-Hi Jane,
+Hi Afsheen,
 
 I just got the denial letter (code N290 — missing modifier) for my March MRI claim. My provider's billing office says they can correct and resubmit. What's the appeal window if the resubmission also gets denied? My out-of-pocket on this is already at the OOP max.
 
 Thanks,
-Sarah`,
-      aiDraft: `Dear Sarah,
+Jeeva`,
+      aiDraft: `Dear Jeeva,
 
 Thank you for the quick follow-up — and I'm sorry the determination didn't land cleanly the first time.
 
@@ -90,7 +90,7 @@ A few facts for your situation:
 I'll personally watch for the resubmission and notify you by phone or SMS once it lands. If you'd like a written summary of these options on letterhead, just reply YES and I'll send it within the hour.
 
 Warm regards,
-Jane Doe`,
+Afsheen Mohammed`,
       confidence: 61,
       reasoning: [
         'Member is at OOP max — extra-care messaging required',
@@ -98,8 +98,8 @@ Jane Doe`,
         'Provider correction path is standard; appeal path needs human verification of state-specific timing',
         'Recommended: approve after confirming TX-specific appeal timing in KB article AH-APL-002',
       ],
-      deck: 'Lopez · Denial Appeal Briefing (auto-generated) · 3 slides',
-      metaItems: [{ k: 'Member', v: 'Sarah Lopez · ANH-3318-2204' }, { k: 'Claim', v: 'CLM-8902 · DOS 14 Mar' }, { k: 'Held since', v: '05:48 CT' }],
+      deck: 'Sharma · Denial Appeal Briefing (auto-generated) · 3 slides',
+      metaItems: [{ k: 'Member', v: 'Jeeva Sharma · ANH-3318-2204' }, { k: 'Claim', v: 'CLM-8902 · DOS 14 Mar' }, { k: 'Held since', v: '05:48 CT' }],
     },
   },
   {
@@ -119,7 +119,7 @@ Please click the secure link to review and e-sign: accesshealthcare.com/elig/sig
 For assistance, call our Dallas Hub directly at +1 (214) 555-0100.
 
 Warm regards,
-Jane Doe`,
+Afsheen Mohammed`,
       confidence: 97,
       reasoning: [
         'Eligibility expiry in 7 days — within auto-reminder SLA window',
@@ -145,7 +145,7 @@ A pre-filled refresh form has been prepared. Please confirm your registered grou
 Secure link: accesshealthcare.com/elig/sign/RG-77104
 
 Warm regards,
-Jane Doe`,
+Afsheen Mohammed`,
       confidence: 98,
       reasoning: ['Eligibility expiry in 11 days — proactive reminder window', 'Tier-1 template applied (group plan, >100 lives)', 'No address change detected in last 2 years'],
       metaItems: [{ k: 'Eligibility expiry', v: '30 May 2026' }, { k: 'Days remaining', v: '11' }, { k: 'Risk', v: 'Low' }],
@@ -159,11 +159,11 @@ Jane Doe`,
       kind: 'SMS AUTO-REPLY', to: 'Vera Carter (+1 555 ••• ••12)', subject: 'SMS auto-acknowledgement',
       aiDraft: `Hi Vera,
 
-Thanks for your message. Jane is on a member call until 09:30. Your query has been logged and she'll respond by 10:00 CT.
+Thanks for your message. Afsheen is on a member call until 09:30. Your query has been logged and she'll respond by 10:00 CT.
 
 If urgent, please call our Dallas Hub directly: +1 (214) 555-0100.
 
-— Access Health AI (on behalf of Jane Doe)`,
+— Access Health AI (on behalf of Afsheen Mohammed)`,
       confidence: 99,
       reasoning: ['SMS received at 06:28 while agent unavailable', 'Standard OOO policy applied', 'Follow-up reminder set for 09:55 CT'],
       metaItems: [{ k: 'Channel', v: 'SMS · Twilio bridge' }, { k: 'Follow-up set', v: '09:55 CT' }, { k: 'Member tier', v: 'Priority' }],
@@ -182,7 +182,7 @@ Warmest birthday wishes from me and the entire Access Health family. We're grate
 Wishing you a year of excellent health and many milestones ahead.
 
 Warm regards,
-Jane Doe & team
+Afsheen Mohammed & team
 Access Healthcare · Dallas Hub`,
       confidence: 99,
       reasoning: ['Birthday date on file — annual trigger', 'Personal tone template applied for Priority tier', 'Sent at 07:15 to land before business hours'],
@@ -202,7 +202,7 @@ I wanted to follow up on the contracted-rate amendment we shared on 16 May. I un
 Do let me know if you have any questions or need any adjustments — I'm happy to set up a 15-minute call at your convenience.
 
 Warm regards,
-Jane Doe`,
+Afsheen Mohammed`,
       confidence: 88,
       reasoning: ['No response to amendment in 72 hrs — follow-up SLA triggered', 'Polite nudge tone applied (not pushy)', 'Annual contract value $480K — Priority escalation threshold'],
       deck: 'Davis & Park · Amendment Summary (auto-generated) · 6 slides',
@@ -214,27 +214,27 @@ Jane Doe`,
 export const SYS_DATA: ActionItem[] = [
   {
     id: 's0', which: 's',
-    time: '04:48', title: 'EHR notes synced.', detail: 'Yesterday\'s Anderson call notes formatted, tagged & saved to Epic.',
+    time: '04:48', title: 'EHR notes synced.', detail: 'Yesterday\'s Iyer call notes formatted, tagged & saved to Epic.',
     badge: 'DONE',
     ai: {
       kind: 'EHR SYNC — COMPLETE',
       reasoning: ['Call transcript auto-transcribed and summarised', '3 action items extracted and added to task queue', 'Epic chart updated with latest interaction date'],
-      metaItems: [{ k: 'Patient', v: 'Anderson, M.' }, { k: 'Notes', v: '3 action items extracted' }, { k: 'Tags applied', v: 'prior-auth, appeal, denial-code' }],
+      metaItems: [{ k: 'Patient', v: 'Iyer, M.' }, { k: 'Notes', v: '3 action items extracted' }, { k: 'Tags applied', v: 'prior-auth, appeal, denial-code' }],
     },
   },
   {
     id: 's1', which: 's',
-    time: '05:14', title: 'Claim status updated · CLM-8902 Lopez.', detail: 'Auto-adjudication cleared. Plan paid posted.',
+    time: '05:14', title: 'Claim status updated · CLM-8902 Sharma.', detail: 'Auto-adjudication cleared. Plan paid posted.',
     badge: 'DONE',
     ai: {
       kind: 'CLAIM UPDATE — COMPLETE',
       reasoning: ['Adjudication engine cleared claim with 0 exceptions', 'Plan-paid posted to provider via EFT', 'Member notified via SMS + EOB queued'],
-      metaItems: [{ k: 'Claim', v: 'CLM-8902 · Lopez, S.' }, { k: 'Status', v: 'Paid → EOB queued' }, { k: 'Confidence', v: '94%' }],
+      metaItems: [{ k: 'Claim', v: 'CLM-8902 · Sharma, S.' }, { k: 'Status', v: 'Paid → EOB queued' }, { k: 'Confidence', v: '94%' }],
     },
   },
   {
     id: 's2', which: 's',
-    time: '06:02', title: 'SLA risk · Patel eligibility verification.', detail: '48-hr breach predicted. Suggesting reassignment to Aaron Kim.',
+    time: '06:02', title: 'SLA risk · Verma eligibility verification.', detail: '48-hr breach predicted. Suggesting reassignment to Aaron Kim.',
     badge: 'REVIEW', needsAction: true,
     ai: {
       kind: 'SLA RISK — NEEDS YOUR REVIEW',
@@ -244,8 +244,8 @@ export const SYS_DATA: ActionItem[] = [
         'Aaron Kim has lower current workload (4 vs 11 open verifications)',
         'Auto-reassign blocked pending your approval',
       ],
-      deck: 'Patel · Eligibility Risk Summary · 2 slides',
-      metaItems: [{ k: 'Member', v: 'Patel, R.' }, { k: 'Eligibility deadline', v: '21 May 2026' }, { k: 'Suggested action', v: 'Reassign to Aaron Kim' }],
+      deck: 'Verma · Eligibility Risk Summary · 2 slides',
+      metaItems: [{ k: 'Member', v: 'Verma, R.' }, { k: 'Eligibility deadline', v: '21 May 2026' }, { k: 'Suggested action', v: 'Reassign to Aaron Kim' }],
     },
   },
   {

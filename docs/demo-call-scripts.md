@@ -24,7 +24,7 @@ How to use:
 
 **Flow:** `claim_status` · **Customer picker:** Jeeva Sharma · **Sentiment arc:** cooling → neutral
 
-Jeeva received a denial letter last week for the MRI knee her doctor ordered in March. She's calling to understand what went wrong and what her options are. The denial is technical (`N290` — missing modifier) and her OOP max is already met for the year, so the financial outcome is much better than she fears.
+Jeeva received a denial letter last week for the MRI knee his doctor ordered in March. He's calling to understand what went wrong and what his options are. The denial is technical (`N290` — missing modifier) and his OOP max is already met for the year, so the financial outcome is much better than he fears.
 
 ---
 
@@ -184,7 +184,7 @@ Muthu has an MRI knee scheduled tomorrow morning at Piedmont Imaging. His prior 
 
 **Flow:** `billing_refund` · **Customer picker:** Manish Verma · **Sentiment arc:** angry → neutral
 
-Manish had an outpatient procedure at an in-network hospital. The hospital was in network — but the anesthesiologist who happened to be assigned that day was out-of-network. She received a bill for $1,840 she wasn't expecting. This is the canonical **No Surprises Act** case.
+Manish had an outpatient procedure at an in-network hospital. The hospital was in network — but the anesthesiologist who happened to be assigned that day was out-of-network. He received a bill for $1,840 he wasn't expecting. This is the canonical **No Surprises Act** case.
 
 ---
 

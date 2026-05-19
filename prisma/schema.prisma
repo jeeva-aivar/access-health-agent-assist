@@ -1,0 +1,397 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── RM PROFILE ────────────────────────────────────────────────────────────
+model RM {
+  id            String   @id @default(uuid())
+  name          String
+  email         String   @unique
+  cluster       String
+  segment       String
+  portfolioSize Int
+  streakDays    Int      @default(0)
+  rank          Int?
+  weeklyPoints  Int      @default(0)
+  joinedAt      DateTime @default(now())
+  createdAt     DateTime @default(now())
+
+  priorities        Priority[]
+  autoActions       AutoAction[]
+  debrief           DailyDebrief[]
+  leaderboard       Leaderboard[]
+  callLogs          CallLog[]
+  customerNotes     CustomerNote[]
+  nbaSignals        NBASignalEvent[]
+  agentRunLogs      AgentRunLog[]
+  cbsAlerts         CBSAlert[]
+  emailThreads      EmailThread[]
+  overnightStats    OvernightStats[]
+  managerAlignments ManagerAlignment[]
+  calendarEvents    CalendarEvent[]
+  meetingInvites    MeetingInvite[]
+}
+
+// ─── CUSTOMERS ──────────────────────────────────────────────────────────────
+model Customer {
+  id                String    @id @default(uuid())
+  name              String
+  contactName       String?
+  company           String?
+  segment           String
+  subSegment        String?
+  aum               Decimal?
+  annualRevenue     Decimal?
+  lastInteraction   DateTime?
+  signalType        String?
+  nbaProduct        String?
+  riskFlag          Boolean   @default(false)
+  riskReason        String?
+  city              String?
+  sector            String?
+  relationshipSince DateTime?
+  phoneNumber       String?
+  emailAddress      String?
+  cifId             String?   @unique
+  creditScore       Int?
+  loyaltyTier       String?
+
+  priorities      Priority[]
+  autoActions     AutoAction[]
+  callLogs        CallLog[]
+  notes           CustomerNote[]
+  productHoldings ProductHolding[]
+  nbaSignals      NBASignalEvent[]
+  cbsAlerts       CBSAlert[]
+  emailThreads    EmailThread[]
+  milestones      CustomerMilestone[]
+  calendarEvents  CalendarEvent[]
+  meetingInvites  MeetingInvite[]
+}
+
+// ─── PRIORITY STACK ─────────────────────────────────────────────────────────
+model Priority {
+  id             String   @id @default(uuid())
+  rmId           String
+  rm             RM       @relation(fields: [rmId], references: [id])
+  customerId     String
+  customer       Customer @relation(fields: [customerId], references: [id])
+  rank           Int
+  timeSlot       String
+  title          String
+  description    String
+  whyNow         String
+  urgencyBadge   String
+  status         String
+  dealValue      Decimal?
+  priorityScore  Float?
+  managerAligned Boolean  @default(false)
+  date           DateTime @default(now())
+
+  prepPacks PrepPack[]
+}
+
+// ─── PREP PACK ───────────────────────────────────────────────────────────────
+model PrepPack {
+  id         String   @id @default(uuid())
+  priorityId String
+  priority   Priority @relation(fields: [priorityId], references: [id])
+  label      String
+  detail     String
+  badge      String
+  completed  Boolean  @default(false)
+}
+
+// ─── AUTO ACTIONS ────────────────────────────────────────────────────────────
+model AutoAction {
+  id          String    @id @default(uuid())
+  rmId        String
+  rm          RM        @relation(fields: [rmId], references: [id])
+  customerId  String?
+  customer    Customer? @relation(fields: [customerId], references: [id])
+  column      String
+  timestamp   String
+  title       String
+  detail      String
+  status      String
+  category    String
+  agentSource String
+  actionable  Boolean   @default(false)
+  approved    Boolean?
+  date        DateTime  @default(now())
+}
+
+// ─── OVERNIGHT STATS ─────────────────────────────────────────────────────────
+model OvernightStats {
+  id                    String   @id @default(uuid())
+  rmId                  String
+  rm                    RM       @relation(fields: [rmId], references: [id])
+  date                  DateTime @default(now())
+  tier1RepliesSent      Int
+  salesforceUpdated     Int
+  kycRemindersSent      Int
+  timeSavedMinutes      Int
+  actionsComplete       Int
+  actionsAwaitingReview Int
+}
+
+// ─── DAILY DEBRIEF ───────────────────────────────────────────────────────────
+model DailyDebrief {
+  id                String   @id @default(uuid())
+  rmId              String
+  rm                RM       @relation(fields: [rmId], references: [id])
+  date              DateTime @default(now())
+  customerTimeMin   Int
+  autoActionsCount  Int
+  slaBreachers      Int
+  headline          String
+  tomorrowPreview   String
+  totalCalls        Int      @default(0)
+  dealsProgressed   Int      @default(0)
+  revenueInfluenced Decimal  @default(0)
+
+  timeline DebriefEvent[]
+}
+
+model DebriefEvent {
+  id        String       @id @default(uuid())
+  debriefId String
+  debrief   DailyDebrief @relation(fields: [debriefId], references: [id])
+  timeSlot  String
+  title     String
+  detail    String
+  outcome   String
+}
+
+// ─── LEADERBOARD ─────────────────────────────────────────────────────────────
+model Leaderboard {
+  id            String   @id @default(uuid())
+  rmId          String
+  rm            RM       @relation(fields: [rmId], references: [id])
+  period        String
+  cluster       String
+  rank          Int
+  points        Int
+  streakDays    Int
+  delta         Int
+  isCurrentUser Boolean  @default(false)
+  rmName        String
+  weekOf        DateTime @default(now())
+}
+
+// ─── MANAGER ALIGNMENT ───────────────────────────────────────────────────────
+model ManagerAlignment {
+  id           String   @id @default(uuid())
+  rmId         String
+  rm           RM       @relation(fields: [rmId], references: [id])
+  date         DateTime @default(now())
+  message      String
+  alignedCount Int
+  totalCount   Int
+  managerName  String
+  managerEmail String?
+}
+
+// ─── EMAIL THREADS ───────────────────────────────────────────────────────────
+model EmailThread {
+  id               String    @id @default(uuid())
+  subject          String
+  customerId       String?
+  customer         Customer? @relation(fields: [customerId], references: [id])
+  rmId             String
+  rm               RM        @relation(fields: [rmId], references: [id])
+  initiatedBy      String
+  startedAt        DateTime
+  lastActivity     DateTime
+  status           String
+  priority         String
+  aiClassification String?
+  sentimentScore   Int?
+  competitorFlag   Boolean   @default(false)
+
+  emails Email[]
+}
+
+model Email {
+  id             String      @id @default(uuid())
+  threadId       String
+  thread         EmailThread @relation(fields: [threadId], references: [id])
+  fromAddress    String
+  fromName       String
+  toAddress      String
+  toName         String
+  ccAddress      String?
+  subject        String
+  bodyText       String
+  sentAt         DateTime
+  direction      String
+  generatedBy    String
+  aiConfidence   Float?
+  approved       Boolean     @default(false)
+  classification String?
+  sentiment      String?
+  entities       Json?
+  attachments    Json?
+}
+
+// ─── CALL LOGS ───────────────────────────────────────────────────────────────
+model CallLog {
+  id                String    @id @default(uuid())
+  rmId              String
+  rm                RM        @relation(fields: [rmId], references: [id])
+  customerId        String
+  customer          Customer  @relation(fields: [customerId], references: [id])
+  scheduledAt       DateTime
+  startedAt         DateTime?
+  endedAt           DateTime?
+  durationMin       Int?
+  direction         String
+  channel           String
+  outcome           String
+  sentimentPre      String?
+  sentimentPost     String?
+  sentimentDelta    Int?
+  keyTopics         String[]
+  actionItems       Json?
+  transcriptSummary String?
+  nbaTriggered      Boolean   @default(false)
+  dealValue         Decimal?
+  outcomeLabel      String?
+}
+
+// ─── CUSTOMER NOTES ───────────────────────────────────────────────────────────
+model CustomerNote {
+  id           String   @id @default(uuid())
+  customerId   String
+  customer     Customer @relation(fields: [customerId], references: [id])
+  rmId         String
+  rm           RM       @relation(fields: [rmId], references: [id])
+  createdAt    DateTime @default(now())
+  content      String
+  noteType     String
+  source       String
+  linkedCallId String?
+}
+
+// ─── PRODUCT HOLDINGS ────────────────────────────────────────────────────────
+model ProductHolding {
+  id           String    @id @default(uuid())
+  customerId   String
+  customer     Customer  @relation(fields: [customerId], references: [id])
+  productCode  String
+  productName  String
+  value        Decimal?
+  startDate    DateTime?
+  maturityDate DateTime?
+  interestRate Float?
+  status       String
+  accountRef   String?
+}
+
+// ─── NBA SIGNAL EVENTS ────────────────────────────────────────────────────────
+model NBASignalEvent {
+  id          String    @id @default(uuid())
+  customerId  String
+  customer    Customer  @relation(fields: [customerId], references: [id])
+  rmId        String
+  rm          RM        @relation(fields: [rmId], references: [id])
+  signalType  String
+  signalData  Json
+  detectedAt  DateTime
+  nbaProduct  String
+  nbaScript   String?
+  confidence  Float
+  status      String
+  outcome     String?
+  resolvedAt  DateTime?
+}
+
+// ─── AGENT RUN LOGS ───────────────────────────────────────────────────────────
+model AgentRunLog {
+  id                  String   @id @default(uuid())
+  rmId                String
+  rm                  RM       @relation(fields: [rmId], references: [id])
+  agentType           String
+  runAt               DateTime
+  trigger             String
+  inputSummary        String
+  outputSummary       String
+  actionsCount        Int
+  tokensUsed          Int?
+  latencyMs           Int?
+  status              String
+  relatedAutoActionId String?
+}
+
+// ─── CBS ALERTS ───────────────────────────────────────────────────────────────
+model CBSAlert {
+  id          String    @id @default(uuid())
+  customerId  String
+  customer    Customer  @relation(fields: [customerId], references: [id])
+  rmId        String
+  rm          RM        @relation(fields: [rmId], references: [id])
+  alertType   String
+  severity    String
+  message     String
+  triggeredAt DateTime
+  dueDate     DateTime?
+  status      String
+  actionTaken String?
+  resolvedAt  DateTime?
+}
+
+// ─── CUSTOMER MILESTONES ──────────────────────────────────────────────────────
+model CustomerMilestone {
+  id            String   @id @default(uuid())
+  customerId    String
+  customer      Customer @relation(fields: [customerId], references: [id])
+  milestoneType String
+  occurredAt    DateTime
+  value         Decimal?
+  description   String
+  flaggedForRM  Boolean  @default(false)
+}
+
+// ─── CALENDAR EVENTS ──────────────────────────────────────────────────────────
+model CalendarEvent {
+  id           String    @id @default(uuid())
+  rmId         String
+  rm           RM        @relation(fields: [rmId], references: [id])
+  title        String
+  eventType    String    // CUSTOMER_CALL | INTERNAL_MEETING | STANDUP | SITE_VISIT | REVIEW | PERSONAL | OOO
+  startAt      DateTime
+  endAt        DateTime
+  location     String?
+  description  String?
+  customerId   String?
+  customer     Customer? @relation(fields: [customerId], references: [id])
+  attendees    Json?     // [{name, email, role}]
+  status       String    @default("CONFIRMED") // CONFIRMED | TENTATIVE | CANCELLED | DECLINED
+  aiGenerated  Boolean   @default(false)
+  linkedEmailId String?
+}
+
+// ─── MEETING INVITES ──────────────────────────────────────────────────────────
+model MeetingInvite {
+  id           String    @id @default(uuid())
+  rmId         String
+  rm           RM        @relation(fields: [rmId], references: [id])
+  subject      String
+  fromName     String
+  fromEmail    String
+  proposedAt   DateTime
+  durationMin  Int
+  location     String?
+  body         String
+  receivedAt   DateTime
+  response     String?   // ACCEPTED | DECLINED | TENTATIVE | PENDING
+  respondedAt  DateTime?
+  priority     String    @default("NORMAL") // HIGH | NORMAL | LOW
+  customerId   String?
+  customer     Customer? @relation(fields: [customerId], references: [id])
+}

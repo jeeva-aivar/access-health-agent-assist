@@ -73,12 +73,14 @@ const SEARCH_RESULTS = [
 
 function LogoMark({ size = 28 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 100 100" fill="none" style={{ flexShrink: 0 }}>
-      <rect width="100" height="100" rx="18" fill="#56BB64"/>
-      <path d="M50 22 L74 36 L74 60 C74 70 64 78 50 82 C36 78 26 70 26 60 L26 36 Z" fill="#FEFEFE"/>
-      <rect x="46" y="38" width="8" height="28" rx="2" fill="#56BB64"/>
-      <rect x="36" y="48" width="28" height="8" rx="2" fill="#56BB64"/>
-    </svg>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/logo.png"
+      alt="Access Health"
+      width={size}
+      height={size}
+      style={{ flexShrink: 0, borderRadius: Math.round(size * 0.18), objectFit: 'cover', display: 'block' }}
+    />
   )
 }
 
@@ -412,7 +414,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <LogoMark size={34} />
           {!collapsed && (
             <div style={{ lineHeight: 1.15 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.04em', color: '#EDE8E1' }}>ACCESS <span style={{ color: 'var(--ah-emerald)' }}>HEALTH</span></div>
+              <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.04em', color: '#EDE8E1' }}>ACCESS <span style={{ color: 'var(--ah-celadon)' }}>HEALTH</span></div>
               <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.04em', color: 'rgba(200,194,187,0.6)' }}>Agent Workspace</div>
             </div>
           )}
@@ -441,8 +443,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                           cursor: 'pointer',
                           fontSize: 13.5,
                           color: isActive ? '#EDE8E1' : '#C8C2BB',
-                          background: isActive ? 'rgba(86,187,100,0.14)' : 'transparent',
-                          borderLeft: isActive ? '2px solid #56BB64' : '2px solid transparent',
+                          background: isActive ? 'rgba(59,86,183,0.14)' : 'transparent',
+                          borderLeft: isActive ? '2px solid #3B56B7' : '2px solid transparent',
                           fontWeight: isActive ? 500 : 400,
                           transition: 'background 100ms ease',
                         }}
@@ -469,13 +471,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                                   height: 28, padding: '0 12px',
                                   borderRadius: 6, cursor: 'pointer', fontSize: 12.5,
                                   color: childActive ? '#EDE8E1' : 'rgba(200,194,187,0.7)',
-                                  background: childActive ? 'rgba(86,187,100,0.12)' : 'transparent',
-                                  borderLeft: childActive ? '2px solid #56BB64' : '2px solid transparent',
+                                  background: childActive ? 'rgba(59,86,183,0.12)' : 'transparent',
+                                  borderLeft: childActive ? '2px solid #3B56B7' : '2px solid transparent',
                                   fontWeight: childActive ? 500 : 400,
                                   transition: 'background 100ms ease',
                                 }}
                               >
-                                <div style={{ width: 4, height: 4, borderRadius: '50%', background: childActive ? '#56BB64' : 'rgba(200,194,187,0.4)', flexShrink: 0 }} />
+                                <div style={{ width: 4, height: 4, borderRadius: '50%', background: childActive ? '#3B56B7' : 'rgba(200,194,187,0.4)', flexShrink: 0 }} />
                                 {child.label}
                               </div>
                             )

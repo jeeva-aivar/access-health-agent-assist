@@ -39,7 +39,7 @@ export default function PitchBuilderPage() {
   return (
     <AgentPage
       agentId="pitch_builder" label="Benefits Pitch Builder" icon="Presentation"
-      tagline="Tailored plan-benefit walkthroughs & talking points for member meetings" color="#56BB64" latency="~53s"
+      tagline="Tailored plan-benefit walkthroughs & talking points for member meetings" color="#3B56B7" latency="~53s"
       buildPayload={buildPayload}
       form={
         <>

@@ -5,14 +5,16 @@ import { useRouter } from 'next/navigation'
 import { Icon } from '@/components/ui/Icon'
 
 function LogoMark({ size = 36 }: { size?: number }) {
-  // Access Health shield + cross. Matches AppShell sidebar logo.
+  // Access Health caduceus logo (matches AppShell sidebar).
   return (
-    <svg width={size} height={size} viewBox="0 0 100 100" fill="none" style={{ flexShrink: 0 }}>
-      <rect width="100" height="100" rx="18" fill="#56BB64"/>
-      <path d="M50 22 L74 36 L74 60 C74 70 64 78 50 82 C36 78 26 70 26 60 L26 36 Z" fill="#FEFEFE"/>
-      <rect x="46" y="38" width="8" height="28" rx="2" fill="#56BB64"/>
-      <rect x="36" y="48" width="28" height="8" rx="2" fill="#56BB64"/>
-    </svg>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/logo.png"
+      alt="Access Health"
+      width={size}
+      height={size}
+      style={{ flexShrink: 0, borderRadius: Math.round(size * 0.18), objectFit: 'cover', display: 'block' }}
+    />
   )
 }
 
@@ -112,7 +114,7 @@ export default function LoginPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 32 }}>
             <LogoMark size={36} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2, lineHeight: 1.15 }}>
-              <span style={{ fontSize: 14, fontWeight: 700, letterSpacing: '0.04em' }}>ACCESS <span style={{ color: 'var(--ah-emerald)' }}>HEALTH</span></span>
+              <span style={{ fontSize: 14, fontWeight: 700, letterSpacing: '0.04em', color: '#fff' }}>ACCESS <span style={{ color: 'var(--ah-celadon)' }}>HEALTH</span></span>
               <span style={{ fontSize: 14, fontWeight: 700, letterSpacing: '0.04em', color: 'rgba(255,255,255,0.6)' }}>Agent Workspace</span>
             </div>
           </div>

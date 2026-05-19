@@ -2,25 +2,19 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   env: {
-    NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET ?? 'idfc-rm-workspace-demo-secret-2026',
-    NEXTAUTH_URL: process.env.NEXTAUTH_URL ?? 'http://localhost:3000',
+    NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
+    NEXTAUTH_URL: process.env.NEXTAUTH_URL,
   },
   async rewrites() {
-    const beUrl = process.env.CONVOGENT_BE_URL || 'https://idfc-call-tapping.aivar.app'
-    const agentUrl = process.env.CONVOGENT_AGENT_URL || 'https://idfc-call-tapping.aivar.app'
+    const agentUrl = process.env.CONVOGENT_AGENT_URL
     return [
-      {
-        source: '/api/convogent/:path*',
-        destination: `${beUrl}/api/:path*`,
-      },
-      {
-        source: '/api/agent/:path*',
-        destination: `${agentUrl}/:path*`,
-      },
-      {
-        source: '/api/avatar/:path*',
-        destination: `https://avatar.aivar.app/api/:path*`,
-      },
+      // Live Call Assist WebSocket — proxied so the browser hits same-origin.
+      // /api/agent/live (browser) -> ${CONVOGENT_AGENT_URL}/live (upstream)
+      // Only register the rewrite when the env var is set; otherwise the route 404s.
+      ...(agentUrl ? [{ source: '/api/agent/:path*', destination: `${agentUrl}/:path*` }] : []),
+      // Unused in this app — leave the avatar proxy in place in case the meeting
+      // avatar page is wired up to a real service later.
+      { source: '/api/avatar/:path*', destination: 'https://avatar.aivar.app/api/:path*' },
     ]
   },
 };

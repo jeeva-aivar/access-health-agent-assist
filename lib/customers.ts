@@ -16,6 +16,8 @@
 export type RcmFlow = 'claim_status' | 'eligibility_priorauth' | 'billing_refund'
 export type Sentiment = 'positive' | 'neutral' | 'cooling' | 'negative'
 export type PlanType = 'PPO' | 'HMO' | 'EPO' | 'POS' | 'HDHP' | 'Medicare Advantage' | 'Medicare + Supplement'
+export type CustomerSegment = 'Individual' | 'Family' | 'Group' | 'Provider'
+export type CustomerTier = 'Priority' | 'Standard'
 export type ClaimStatus = 'submitted' | 'in_review' | 'paid' | 'denied' | 'partial'
 export type PriorAuthStatus = 'approved' | 'pending' | 'denied' | 'expired'
 export type AppointmentStatus = 'scheduled' | 'completed' | 'no_show' | 'cancelled'
@@ -94,6 +96,12 @@ export interface Customer {
   effectiveDate: string
   pcp: string
 
+  // Caseload classification (used by /portfolio list + filters)
+  segment: CustomerSegment
+  tier: CustomerTier
+  healthScore: number         // 0-100; <60 surfaces as at-risk
+  memberSince: string         // YYYY-MM-DD — first enrollment with Access Health
+
   // Demo flow context
   flow: RcmFlow
   callReason: string          // one-line description of why they're calling
@@ -134,7 +142,8 @@ export const CUSTOMERS: Customer[] = [
   // 1. Michael Anderson — primary demo subject (in-review claim)
   {
     phone: '+12145550188', phoneDisplay: '+1 (214) 555-0188',
-    memberId: 'ANH-2418-4421', name: 'Mr. Michael Anderson',
+    memberId: 'ANH-2418-4421',
+    segment: 'Individual', tier: 'Priority', healthScore: 62, memberSince: '2020-03-14', name: 'Mr. Michael Anderson',
     firstName: 'Michael', lastName: 'Anderson', initials: 'MA',
     dob: '1978-04-14', email: 'm.anderson@example.com',
     city: 'Dallas', state: 'TX', language: 'en',
@@ -181,7 +190,8 @@ export const CUSTOMERS: Customer[] = [
   // 2. Sarah Lopez — denied claim with appeal options
   {
     phone: '+17135550212', phoneDisplay: '+1 (713) 555-0212',
-    memberId: 'LPZ-3318-2204', name: 'Ms. Sarah Lopez',
+    memberId: 'LPZ-3318-2204',
+    segment: 'Individual', tier: 'Priority', healthScore: 38, memberSince: '2023-07-02', name: 'Ms. Sarah Lopez',
     firstName: 'Sarah', lastName: 'Lopez', initials: 'SL',
     dob: '1985-09-23', email: 's.lopez@example.com',
     city: 'Houston', state: 'TX', language: 'en',
@@ -224,7 +234,8 @@ export const CUSTOMERS: Customer[] = [
   // 3. Robert Chen — completed claim, EOB explanation
   {
     phone: '+12025550143', phoneDisplay: '+1 (202) 555-0143',
-    memberId: 'CHN-7714-0908', name: 'Mr. Robert Chen',
+    memberId: 'CHN-7714-0908',
+    segment: 'Individual', tier: 'Standard', healthScore: 88, memberSince: '2018-01-09', name: 'Mr. Robert Chen',
     firstName: 'Robert', lastName: 'Chen', initials: 'RC',
     dob: '1962-11-08', email: 'r.chen@example.com',
     city: 'Washington', state: 'DC', language: 'en',
@@ -264,7 +275,8 @@ export const CUSTOMERS: Customer[] = [
   // 4. Marcus Williams — prior auth status (anxious, day-before)
   {
     phone: '+14045550199', phoneDisplay: '+1 (404) 555-0199',
-    memberId: 'WIL-6629-1812', name: 'Mr. Marcus Williams',
+    memberId: 'WIL-6629-1812',
+    segment: 'Individual', tier: 'Priority', healthScore: 55, memberSince: '2024-11-20', name: 'Mr. Marcus Williams',
     firstName: 'Marcus', lastName: 'Williams', initials: 'MW',
     dob: '1972-07-19', email: 'm.williams@example.com',
     city: 'Atlanta', state: 'GA', language: 'en',
@@ -306,7 +318,8 @@ export const CUSTOMERS: Customer[] = [
   // 5. Jennifer O'Connor — new PCP visit, eligibility check
   {
     phone: '+16175550234', phoneDisplay: '+1 (617) 555-0234',
-    memberId: 'OCO-4488-3306', name: 'Dr. Jennifer O\'Connor',
+    memberId: 'OCO-4488-3306',
+    segment: 'Individual', tier: 'Standard', healthScore: 95, memberSince: '2026-04-01', name: 'Dr. Jennifer O\'Connor',
     firstName: 'Jennifer', lastName: 'O\'Connor', initials: 'JO',
     dob: '1990-03-22', email: 'j.oconnor@example.com',
     city: 'Boston', state: 'MA', language: 'en',
@@ -341,7 +354,8 @@ export const CUSTOMERS: Customer[] = [
   // 6. David Kim — credit balance / refund request
   {
     phone: '+12065550167', phoneDisplay: '+1 (206) 555-0167',
-    memberId: 'KIM-5512-7720', name: 'Mr. David Kim',
+    memberId: 'KIM-5512-7720',
+    segment: 'Individual', tier: 'Standard', healthScore: 80, memberSince: '2022-01-18', name: 'Mr. David Kim',
     firstName: 'David', lastName: 'Kim', initials: 'DK',
     dob: '1981-12-04', email: 'd.kim@example.com',
     city: 'Seattle', state: 'WA', language: 'en',
@@ -381,7 +395,8 @@ export const CUSTOMERS: Customer[] = [
   // 7. Aisha Patel — surprise bill / in-network dispute
   {
     phone: '+13035550155', phoneDisplay: '+1 (303) 555-0155',
-    memberId: 'PTL-7723-0011', name: 'Ms. Aisha Patel',
+    memberId: 'PTL-7723-0011',
+    segment: 'Individual', tier: 'Priority', healthScore: 42, memberSince: '2021-06-04', name: 'Ms. Aisha Patel',
     firstName: 'Aisha', lastName: 'Patel', initials: 'AP',
     dob: '1976-05-14', email: 'a.patel@example.com',
     city: 'Denver', state: 'CO', language: 'en',
@@ -420,7 +435,8 @@ export const CUSTOMERS: Customer[] = [
   // 8. Luis Hernandez — schedule specialist + start prior auth
   {
     phone: '+19155550112', phoneDisplay: '+1 (915) 555-0112',
-    memberId: 'HRN-3344-2255', name: 'Mr. Luis Hernandez',
+    memberId: 'HRN-3344-2255',
+    segment: 'Individual', tier: 'Standard', healthScore: 78, memberSince: '2020-09-13', name: 'Mr. Luis Hernandez',
     firstName: 'Luis', lastName: 'Hernandez', initials: 'LH',
     dob: '1968-08-30', email: 'l.hernandez@example.com',
     city: 'El Paso', state: 'TX', language: 'es',
@@ -457,7 +473,8 @@ export const CUSTOMERS: Customer[] = [
   // 9. Maria Walker — repeated denials pattern (family plan)
   {
     phone: '+12015550178', phoneDisplay: '+1 (201) 555-0178',
-    memberId: 'WAL-6644-1188', name: 'Mrs. Maria Walker',
+    memberId: 'WAL-6644-1188',
+    segment: 'Family', tier: 'Priority', healthScore: 28, memberSince: '2022-08-30', name: 'Mrs. Maria Walker',
     firstName: 'Maria', lastName: 'Walker', initials: 'MW',
     dob: '1979-02-11', email: 'm.walker@example.com',
     city: 'Newark', state: 'NJ', language: 'en',
@@ -500,7 +517,8 @@ export const CUSTOMERS: Customer[] = [
   // 10. Olivia Brooks — pre-procedure OOP projection (Medicare + Supplement)
   {
     phone: '+16025550189', phoneDisplay: '+1 (602) 555-0189',
-    memberId: 'BRK-9911-4422', name: 'Mrs. Olivia Brooks',
+    memberId: 'BRK-9911-4422',
+    segment: 'Individual', tier: 'Priority', healthScore: 65, memberSince: '2017-05-22', name: 'Mrs. Olivia Brooks',
     firstName: 'Olivia', lastName: 'Brooks', initials: 'OB',
     dob: '1958-10-05', email: 'o.brooks@example.com',
     city: 'Phoenix', state: 'AZ', language: 'en',

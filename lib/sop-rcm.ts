@@ -54,7 +54,10 @@ export const CLAIMS_CALL: SopWorkflow = {
       guidance:
         'State the current claim status clearly: In progress, Denied, or Completed. Add a one-sentence reason drawn from the claims system / KB. Do not improvise — escalate if status is ambiguous.',
       completionCue:
-        /\b(claim\s+(is|status)|status\s+(is|of|update))\b[\s\S]{0,60}(in[-\s]progress|denied|completed|approved|settled|under\s+review)|\b(in[-\s]progress|denied|completed|approved|settled)\b[\s\S]{0,40}(claim|appeal|reimbursement)/i,
+        // Branch 1: "claim is/was/has been denied" or "status is/was …"
+        // Branch 2: status word then claim/denial vocab within 80 chars
+        //           — also catches "denied with code N290" and "denied … modifier"
+        /\b(claim\s+(is|was|has\s+been|status)|status\s+(is|was|of|update))\b[\s\S]{0,80}(in[-\s]progress|denied|completed|approved|settled|under\s+review)|\b(in[-\s]progress|denied|completed|approved|settled)\b[\s\S]{0,80}(claim|appeal|reimbursement|code|modifier)/i,
     },
     {
       id: 'follow_up',

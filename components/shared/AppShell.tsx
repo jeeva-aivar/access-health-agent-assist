@@ -82,8 +82,10 @@ function LogoMark({ collapsed = false }: { collapsed?: boolean }) {
         height: collapsed ? 20 : 26,
         width: 'auto',
         objectFit: 'contain',
-        filter: 'brightness(0) invert(1)',
-        opacity: collapsed ? 0.85 : 1,
+        // Logo PNG has a black background; screen blend makes black transparent
+        // so only the coloured elements render over the dark sidebar.
+        mixBlendMode: 'screen',
+        filter: 'brightness(1.8)',
       }}
     />
   )

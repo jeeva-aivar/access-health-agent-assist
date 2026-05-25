@@ -110,7 +110,7 @@ export const MOCK = {
         to: "ravi.patel@example.com",
         cc: "compliance@accesshealthcare.com",
         subject: "Re: Records release · CC-22841 · received",
-        body: "Dear Mr. Verma,\n\nThanking you for sharing the records release for case CC-22841. I confirm receipt of all 14 attachments. Compliance has been copied for parallel review.\n\nWe will revert with the consolidated determination by Fri 9 May, 17:00 CT.\n\nWarm regards,\nAfsheen Mohammed\nAccess Healthcare · Dallas Hub",
+        body: "Dear Mr. Verma,\n\nThanking you for sharing the records release for case CC-22841. I confirm receipt of all 14 attachments. Compliance has been copied for parallel review.\n\nWe will revert with the consolidated determination by Fri 9 May, 17:00 CT.\n\nWarm regards,\nAfsheen Mohammed\nCorebridge Financial · Dallas Hub",
         meta: [{ k: "Template", v: "Records acknowledgement v3.1" }, { k: "Risk score", v: "Low (0.18)" }, { k: "Tier", v: "1 — fully autonomous" }],
       }
     },
@@ -126,7 +126,7 @@ export const MOCK = {
     },
     { time: "06:02", title: "Eligibility reminder · Singh, H.", detail: "Form pre-filled with last year's data. Expires in 7 days.", status: "SENT", tone: "success",
       detailFull: { kind: "SMS + Email · eligibility reminder", to: "harpreet.singh@example.com · +1 (555) ••• ••27", cc: "—", subject: "Annual eligibility refresh · 7 days remaining",
-        body: "Hi Harpreet,\n\nQuick reminder — your annual eligibility refresh is due by 15 May. We've pre-filled the form with last year's data; please review and e-sign.\n\nLink: accesshealthcare.com/elig/sign/SG-22841 (valid 7 days)\n\nThanks,\nAccess Healthcare",
+        body: "Hi Harpreet,\n\nQuick reminder — your annual eligibility refresh is due by 15 May. We've pre-filled the form with last year's data; please review and e-sign.\n\nLink: corebridgefinancial.com/elig/sign/SG-22841 (valid 7 days)\n\nThanks,\nCorebridge Financial",
         meta: [{ k: "Pre-filled fields", v: "12 of 14" }, { k: "Caller effort", v: "~90 seconds" }, { k: "Channels", v: "SMS + Email" }] }
     },
     { time: "06:14", title: "Eligibility reminder · Mehra Logistics group plan.", detail: "Expires in 11 days. Tier-1 template, low risk.", status: "SENT", tone: "success",
@@ -141,7 +141,7 @@ export const MOCK = {
     },
     { time: "07:12", title: "Birthday greeting · Rajesh Mehta.", detail: "Personalized by member tier (Priority).", status: "SENT", tone: "success",
       detailFull: { kind: "Email · greeting", to: "rajesh@example.com", cc: "—", subject: "Wishing you a wonderful birthday, Mr. Mehta",
-        body: "Dear Mr. Mehta,\n\nOn behalf of the Access Healthcare family, wishing you a wonderful year ahead — health, joy, and continued success.\n\nWith warm regards,\nAfsheen Mohammed & team",
+        body: "Dear Mr. Mehta,\n\nOn behalf of the Corebridge Financial family, wishing you a wonderful year ahead — health, joy, and continued success.\n\nWith warm regards,\nAfsheen Mohammed & team",
         meta: [{ k: "Tier", v: "Priority" }, { k: "Tone", v: "Formal warm" }] }
     },
     { time: "07:45", title: "Plan renewal reminder · Lakshmi Iyer.", detail: "Renewal options pre-filled, dispatched via email.", status: "SENT", tone: "success",
@@ -151,7 +151,7 @@ export const MOCK = {
     },
     { time: "03:22", title: "Auto-replied to Goyal Pharma.", detail: "Site visit confirmation sent, calendar block created.", status: "SENT", tone: "success",
       detailFull: { kind: "Email · auto-reply", to: "anand.goyal@goyalpharma.example", cc: "—", subject: "Re: Site visit confirmation · 9 May",
-        body: "Dear Mr. Goyal,\n\nConfirming Afsheen's visit on 9 May at 14:00. Calendar invite attached. Please ensure the operations team is available for a 20-min floor walk.\n\nWarm regards,\nAfsheen Mohammed · Access Healthcare",
+        body: "Dear Mr. Goyal,\n\nConfirming Afsheen's visit on 9 May at 14:00. Calendar invite attached. Please ensure the operations team is available for a 20-min floor walk.\n\nWarm regards,\nAfsheen Mohammed · Corebridge Financial",
         meta: [{ k: "Calendar block", v: "9 May 14:00-15:00" }, { k: "Tier", v: "1 — autonomous" }] }
     },
     { time: "03:45", title: "Wellness greeting batch · 38 members.", detail: "Tier-personalized, queued for 09:15 your review.", status: "REVIEW", tone: "warning", needsAction: true,
@@ -161,7 +161,7 @@ export const MOCK = {
     },
     { time: "05:20", title: "Nair Exports · benefit-change alert sent.", detail: "PPO out-of-pocket reset — opportunity window 4hrs.", status: "SENT", tone: "success",
       detailFull: { kind: "SMS · benefits alert", to: "+1 (555) ••• ••43", cc: "—", subject: "Benefits opportunity window — 4hr",
-        body: "Good morning. Your annual deductible has reset as of 05:15 — elective procedures are now within your preferred coverage range. Window estimated 4 weeks. Shall I block your specialist consult slot?\n\n— Access Healthcare benefits desk, on behalf of Afsheen",
+        body: "Good morning. Your annual deductible has reset as of 05:15 — elective procedures are now within your preferred coverage range. Window estimated 4 weeks. Shall I block your specialist consult slot?\n\n— Corebridge Financial benefits desk, on behalf of Afsheen",
         meta: [{ k: "Benefit", v: "Deductible reset" }, { k: "Window estimate", v: "4 weeks" }, { k: "Open balance", v: "$120 copay open" }] }
     },
     { time: "06:55", title: "Anand Sons · enrollment query pre-answered.", detail: "Enrollment checklist pre-filled, SMS sent.", status: "SENT", tone: "success",

@@ -185,9 +185,14 @@ function SuggestionCard({ s, callStartedAt, workflow }: { s: Suggestion; callSta
   const ts = callStartedAt ? fmtClock(s.startedAt) : ''
   const step = s.stepId ? workflow.steps.find(st => st.id === s.stepId) : null
   const stepIdx = step ? workflow.steps.indexOf(step) : -1
-  const whyText = step
-    ? `Step ${stepIdx + 1} · ${step.title}\n\n${step.guidance}`
-    : 'Generated from live call context and SOP guidelines to guide the conversation toward resolution.'
+
+  // Split AI text into the "Say:" body and the "Why:" reasoning.
+  // The model outputs: `Say: "…" Why: …` — we separate them so the card
+  // body shows only the suggestion and the toggle reveals the rationale.
+  const whySplit = /\bWhy:\s*/i.exec(s.text)
+  const sayText = whySplit ? s.text.slice(0, whySplit.index).replace(/^Say:\s*/i, '').trim() : s.text
+  const whyText = whySplit ? s.text.slice(whySplit.index + whySplit[0].length).trim() : null
+
   return (
     <div style={{ background: style.bg, border: `1px solid ${style.border}`, borderRadius: 10, padding: '14px 16px', marginTop: 10 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
@@ -198,27 +203,29 @@ function SuggestionCard({ s, callStartedAt, workflow }: { s: Suggestion; callSta
         {ts && <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: 'var(--text-tertiary)', marginLeft: 'auto' }}>{ts}</span>}
       </div>
       <p style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: 17, fontStyle: 'italic', lineHeight: 1.5, color: 'var(--text-primary)', margin: 0 }}>
-        {s.text || (s.done ? '—' : '')}
+        {sayText || (s.done ? '—' : '')}
       </p>
       {s.done && (
         <>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
+            {whyText && (
+              <button
+                onClick={() => { setShowWhy((w: boolean) => !w); setShowEscalate(false) }}
+                style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', padding: '5px 10px', borderRadius: 5, border: `1px solid ${showWhy ? 'var(--ah-emerald)' : style.border}`, background: showWhy ? 'rgba(16,185,129,0.08)' : 'var(--bg-card)', color: 'var(--ah-emerald)', cursor: 'pointer' }}>
+                Why this?
+              </button>
+            )}
             <button
-              onClick={() => { setShowWhy(w => !w); setShowEscalate(false) }}
-              style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', padding: '5px 10px', borderRadius: 5, border: `1px solid ${showWhy ? 'var(--ah-emerald)' : style.border}`, background: showWhy ? 'rgba(16,185,129,0.08)' : 'var(--bg-card)', color: 'var(--ah-emerald)', cursor: 'pointer' }}>
-              Why this?
-            </button>
-            <button
-              onClick={() => { setShowEscalate(e => !e); setShowWhy(false) }}
+              onClick={() => { setShowEscalate((e: boolean) => !e); setShowWhy(false) }}
               style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', padding: '5px 10px', borderRadius: 5, border: `1px solid ${showEscalate ? '#dc2626' : style.border}`, background: showEscalate ? 'rgba(220,38,38,0.07)' : 'var(--bg-card)', color: showEscalate ? '#dc2626' : 'var(--ah-emerald)', cursor: 'pointer' }}>
               Escalate
             </button>
           </div>
 
-          {showWhy && (
+          {showWhy && whyText && (
             <div style={{ marginTop: 10, padding: '10px 14px', borderRadius: 7, background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)' }}>
-              <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9.5, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ah-emerald)', marginBottom: 6 }}>Why this suggestion?</div>
-              <p style={{ fontSize: 12.5, lineHeight: 1.6, color: 'var(--text-secondary)', margin: 0, whiteSpace: 'pre-line' }}>{whyText}</p>
+              <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9.5, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ah-emerald)', marginBottom: 6 }}>Why this?</div>
+              <p style={{ fontSize: 12.5, lineHeight: 1.6, color: 'var(--text-secondary)', margin: 0 }}>{whyText}</p>
             </div>
           )}
 

@@ -4,16 +4,14 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Icon } from '@/components/ui/Icon'
 
-function LogoMark({ size = 36 }: { size?: number }) {
-  // Access Health caduceus logo (matches AppShell sidebar).
+function LogoMark() {
+  // Corebridge Financial logo — white-inverted for the dark gradient panel.
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src="/logo.png"
-      alt="Access Health"
-      width={size}
-      height={size}
-      style={{ flexShrink: 0, borderRadius: Math.round(size * 0.18), objectFit: 'cover', display: 'block' }}
+      src="/corebridge-logo.png"
+      alt="Corebridge Financial"
+      style={{ display: 'block', height: 28, width: 'auto', objectFit: 'contain', filter: 'brightness(0) invert(1)' }}
     />
   )
 }
@@ -111,12 +109,9 @@ export default function LoginPage() {
           borderRadius: 14, padding: 32, color: '#fff', backdropFilter: 'blur(8px)',
         }}>
           {/* Logo */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 32 }}>
-            <LogoMark size={36} />
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 2, lineHeight: 1.15 }}>
-              <span style={{ fontSize: 14, fontWeight: 700, letterSpacing: '0.04em', color: '#fff' }}>ACCESS <span style={{ color: 'var(--ah-celadon)' }}>HEALTH</span></span>
-              <span style={{ fontSize: 14, fontWeight: 700, letterSpacing: '0.04em', color: 'rgba(255,255,255,0.6)' }}>Agent Workspace</span>
-            </div>
+          <div style={{ marginBottom: 32 }}>
+            <LogoMark />
+            <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.03em', color: 'rgba(255,255,255,0.55)', marginTop: 8 }}>Agent Workspace</div>
           </div>
 
           {/* ── Step 1: Credentials ── */}
@@ -170,7 +165,7 @@ export default function LoginPage() {
               <div style={{ marginTop: 32, paddingTop: 24, borderTop: '1px solid rgba(255,255,255,0.12)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>
                   <Icon name="ShieldCheck" size={13} />
-                  <span>Secured by Access Health · IT-Sec audit-grade · TLS 1.3</span>
+                  <span>Secured by Corebridge · IT-Sec audit-grade · TLS 1.3</span>
                 </div>
               </div>
             </form>
@@ -246,7 +241,7 @@ export default function LoginPage() {
         <div className="anim-fade-up" style={{ animationDelay: '120ms', maxWidth: 540 }}>
           <div className="caption" style={{ color: 'var(--idfc-red)', fontSize: 11 }}>EMPLOYEE AI WORKSPACE</div>
           <h2 style={{ fontSize: 44, fontWeight: 300, letterSpacing: '-0.02em', lineHeight: 1.1, color: 'var(--text-primary)', marginTop: 12 }}>
-            Your day, <span style={{ fontWeight: 600, color: 'var(--idfc-red)' }}>orchestrated</span> through Access Health AI.
+            Your day, <span style={{ fontWeight: 600, color: 'var(--idfc-red)' }}>orchestrated</span> through Corebridge AI.
           </h2>
           <p className="body-lg" style={{ color: 'var(--text-secondary)', maxWidth: 480, marginTop: 16 }}>
             Routine tasks automated for you. Priorities ranked and reasoned. Your judgement, where it matters most.
@@ -270,7 +265,7 @@ export default function LoginPage() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div className="caption" style={{ color: 'var(--text-tertiary)', fontSize: 11 }}>© 2026 Access Healthcare · All rights reserved</div>
+          <div className="caption" style={{ color: 'var(--text-tertiary)', fontSize: 11 }}>© 2026 Corebridge Financial · All rights reserved</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             {['Privacy', 'Terms', 'Help'].map(lbl => (
               <span key={lbl} className="caption" style={{ color: 'var(--text-tertiary)', fontSize: 11, cursor: 'pointer' }}

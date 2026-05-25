@@ -71,15 +71,20 @@ const SEARCH_RESULTS = [
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
-function LogoMark({ size = 28 }: { size?: number }) {
+function LogoMark({ collapsed = false }: { collapsed?: boolean }) {
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src="/logo.png"
-      alt="Access Health"
-      width={size}
-      height={size}
-      style={{ flexShrink: 0, borderRadius: Math.round(size * 0.18), objectFit: 'cover', display: 'block' }}
+      src="/corebridge-logo.png"
+      alt="Corebridge Financial"
+      style={{
+        display: 'block', flexShrink: 0,
+        height: collapsed ? 20 : 26,
+        width: 'auto',
+        objectFit: 'contain',
+        filter: 'brightness(0) invert(1)',
+        opacity: collapsed ? 0.85 : 1,
+      }}
     />
   )
 }
@@ -177,7 +182,7 @@ function HelpModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const items = [
     { ico: 'BookOpen',      t: 'Read the agent playbook',        d: 'How Agent AI Workspace fits your day · 12 min read' },
     { ico: 'PlayCircle',    t: 'Watch the 3-min walkthrough',    d: 'Morning briefing → debrief in one video' },
-    { ico: 'MessageCircle', t: 'Chat with the Access Health AI bot', d: 'Avg response 12 sec · 24×7' },
+    { ico: 'MessageCircle', t: 'Chat with the Corebridge AI bot', d: 'Avg response 12 sec · 24×7' },
     { ico: 'Phone',         t: 'Call IT helpdesk',               d: '+1 (888) 555-4332 · Mon–Sat 08:00–22:00 CT' },
     { ico: 'Mail',          t: 'Email support',                  d: 'agent.workspace.support@accesshealthcare.com' },
   ]
@@ -391,7 +396,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const activeParentId = NAV_SECTIONS.flatMap(s => s.items).find(i => i.children?.some(c => c.path === pathname))?.id ?? ''
 
   // Determine page title
-  const pageTitle = allItems.find(i => i.path === pathname)?.label ?? 'Access Health Agent Assist'
+  const pageTitle = allItems.find(i => i.path === pathname)?.label ?? 'Corebridge Agent Workspace'
 
   const [expandedId, setExpandedId] = useState<string>(activeParentId)
 
@@ -411,12 +416,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       >
         {/* Logo */}
         <div style={{ height: 'var(--topbar-h)', padding: collapsed ? 0 : '0 16px', display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'flex-start', borderBottom: '1px solid rgba(255,255,255,0.07)', gap: 10 }}>
-          <LogoMark size={34} />
+          <LogoMark collapsed={collapsed} />
           {!collapsed && (
-            <div style={{ lineHeight: 1.15 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.04em', color: '#EDE8E1' }}>ACCESS <span style={{ color: 'var(--ah-celadon)' }}>HEALTH</span></div>
-              <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.04em', color: 'rgba(200,194,187,0.6)' }}>Agent Workspace</div>
-            </div>
+            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.03em', color: 'rgba(200,194,187,0.55)', marginLeft: 2 }}>Agent Workspace</div>
           )}
         </div>
 

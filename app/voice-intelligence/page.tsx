@@ -546,7 +546,7 @@ function HistoryTab({ customer }: { customer: Customer }) {
 function ComplianceTab({ customer }: { customer: Customer }) {
   const flags = [
     { ok: true,  title: 'HIPAA · 3-ID verification in progress', sub: 'Name + Member ID captured. Claim ID still pending — do not disclose claim details yet.' },
-    { ok: true,  title: 'Call recording consent · acknowledged',  sub: 'IVR consent captured at call start · retained per Access Health policy' },
+    { ok: true,  title: 'Call recording consent · acknowledged',  sub: 'IVR consent captured at call start · retained per Corebridge policy' },
     { ok: false, title: 'PHI in transcript · auto-redaction on',  sub: 'Real-time PII/PHI masking active · review redaction log post-call' },
     { ok: true,  title: 'Authorization on file',                  sub: 'Patient signed Authorization for Use & Disclosure · valid through Dec 31, 2026' },
     { ok: customer.sentiment !== 'negative', title: 'Escalation path · supervisor available', sub: customer.sentiment === 'negative' ? 'Sentiment cooling — flag for warm transfer if unresolved within 5 min' : 'Tier-2 available if claim status is ambiguous' },

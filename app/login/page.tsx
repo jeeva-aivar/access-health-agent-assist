@@ -11,7 +11,7 @@ function LogoMark() {
     <img
       src="/corebridge-logo.png"
       alt="Corebridge Financial"
-      style={{ display: 'block', height: 28, width: 'auto', objectFit: 'contain', filter: 'brightness(0) invert(1)' }}
+      style={{ display: 'block', height: 30, width: 'auto', objectFit: 'contain', mixBlendMode: 'screen', filter: 'brightness(2)' }}
     />
   )
 }

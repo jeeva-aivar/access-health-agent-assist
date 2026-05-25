@@ -185,7 +185,7 @@ function SuggestionCard({ s, callStartedAt }: { s: Suggestion; callStartedAt: nu
   return (
     <div style={{ background: style.bg, border: `1px solid ${style.border}`, borderRadius: 10, padding: '14px 16px', marginTop: 10 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-        <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ah-emerald)' }}>◆ Access Health AI · {style.label}</span>
+        <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ah-emerald)' }}>◆ Corebridge AI · {style.label}</span>
         {stepIdx >= 0 && (
           <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--ah-deep)', padding: '2px 6px', borderRadius: 4, background: 'rgba(59,86,183,0.12)', border: '1px solid rgba(59,86,183,0.3)' }}>Step {stepIdx + 1}</span>
         )}

@@ -178,10 +178,16 @@ const KIND_STYLE: Record<string, { bg: string; border: string; label: string }> 
   general:    { bg: 'rgba(229,230,237,0.6)', border: 'rgba(229,230,237,1)', label: 'Suggestion' },
 }
 
-function SuggestionCard({ s, callStartedAt }: { s: Suggestion; callStartedAt: number | null }) {
+function SuggestionCard({ s, callStartedAt, workflow }: { s: Suggestion; callStartedAt: number | null; workflow: SopWorkflow }) {
+  const [showWhy, setShowWhy] = useState(false)
+  const [showEscalate, setShowEscalate] = useState(false)
   const style = KIND_STYLE[s.kind ?? 'general'] ?? KIND_STYLE.general
   const ts = callStartedAt ? fmtClock(s.startedAt) : ''
-  const stepIdx = s.stepId ? DEFAULT_WORKFLOW.steps.findIndex(st => st.id === s.stepId) : -1
+  const step = s.stepId ? workflow.steps.find(st => st.id === s.stepId) : null
+  const stepIdx = step ? workflow.steps.indexOf(step) : -1
+  const whyText = step
+    ? `Step ${stepIdx + 1} · ${step.title}\n\n${step.guidance}`
+    : 'Generated from live call context and SOP guidelines to guide the conversation toward resolution.'
   return (
     <div style={{ background: style.bg, border: `1px solid ${style.border}`, borderRadius: 10, padding: '14px 16px', marginTop: 10 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
@@ -195,17 +201,40 @@ function SuggestionCard({ s, callStartedAt }: { s: Suggestion; callStartedAt: nu
         {s.text || (s.done ? '—' : '')}
       </p>
       {s.done && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
-          {['Use line', 'Read aloud', 'Why this?', 'Open SOP source', 'Escalate'].map(b => (
-            <button key={b} style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', padding: '5px 10px', borderRadius: 5, border: `1px solid ${style.border}`, background: 'var(--bg-card)', color: 'var(--ah-emerald)', cursor: 'pointer' }}>{b}</button>
-          ))}
-        </div>
+        <>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
+            <button
+              onClick={() => { setShowWhy(w => !w); setShowEscalate(false) }}
+              style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', padding: '5px 10px', borderRadius: 5, border: `1px solid ${showWhy ? 'var(--ah-emerald)' : style.border}`, background: showWhy ? 'rgba(16,185,129,0.08)' : 'var(--bg-card)', color: 'var(--ah-emerald)', cursor: 'pointer' }}>
+              Why this?
+            </button>
+            <button
+              onClick={() => { setShowEscalate(e => !e); setShowWhy(false) }}
+              style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', padding: '5px 10px', borderRadius: 5, border: `1px solid ${showEscalate ? '#dc2626' : style.border}`, background: showEscalate ? 'rgba(220,38,38,0.07)' : 'var(--bg-card)', color: showEscalate ? '#dc2626' : 'var(--ah-emerald)', cursor: 'pointer' }}>
+              Escalate
+            </button>
+          </div>
+
+          {showWhy && (
+            <div style={{ marginTop: 10, padding: '10px 14px', borderRadius: 7, background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)' }}>
+              <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9.5, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ah-emerald)', marginBottom: 6 }}>Why this suggestion?</div>
+              <p style={{ fontSize: 12.5, lineHeight: 1.6, color: 'var(--text-secondary)', margin: 0, whiteSpace: 'pre-line' }}>{whyText}</p>
+            </div>
+          )}
+
+          {showEscalate && (
+            <div style={{ marginTop: 10, padding: '10px 14px', borderRadius: 7, background: 'rgba(220,38,38,0.06)', border: '1px solid rgba(220,38,38,0.2)' }}>
+              <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9.5, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#dc2626', marginBottom: 6 }}>Escalation contact</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>Connect supervisor: +919342295730</div>
+            </div>
+          )}
+        </>
       )}
     </div>
   )
 }
 
-function TurnRow({ turn, suggestions, callStartedAt, customer }: { turn: Turn; suggestions: Suggestion[]; callStartedAt: number | null; customer: Customer }) {
+function TurnRow({ turn, suggestions, callStartedAt, customer, workflow }: { turn: Turn; suggestions: Suggestion[]; callStartedAt: number | null; customer: Customer; workflow: SopWorkflow }) {
   const isCustomer = turn.role === 'CUSTOMER'
   const ts = callStartedAt ? fmtClock(callStartedAt + turn.callOffsetMs) : ''
   return (
@@ -218,14 +247,14 @@ function TurnRow({ turn, suggestions, callStartedAt, customer }: { turn: Turn; s
         {isCustomer && <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: 'var(--text-tertiary)', marginLeft: 'auto' }}>Amazon Connect · {customer.state} bridge</span>}
       </div>
       <p style={{ fontSize: 14.5, lineHeight: 1.55, color: 'var(--text-primary)', margin: 0 }}>{turn.text}</p>
-      {suggestions.map(s => <SuggestionCard key={s.id} s={s} callStartedAt={callStartedAt} />)}
+      {suggestions.map(s => <SuggestionCard key={s.id} s={s} callStartedAt={callStartedAt} workflow={workflow} />)}
     </div>
   )
 }
 
-function TranscriptPanel({ turns, partials, suggestionsByTurn, call, customer, unresolvedPhone }: {
+function TranscriptPanel({ turns, partials, suggestionsByTurn, call, customer, unresolvedPhone, workflow }: {
   turns: Turn[]; partials: Record<Role, string>; suggestionsByTurn: Map<number, Suggestion[]>;
-  call: CallState; customer: Customer; unresolvedPhone: string | null;
+  call: CallState; customer: Customer; unresolvedPhone: string | null; workflow: SopWorkflow;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const sentinelRef = useRef<HTMLDivElement>(null)
@@ -304,7 +333,7 @@ function TranscriptPanel({ turns, partials, suggestionsByTurn, call, customer, u
         )}
 
         {turns.map((turn, idx) => (
-          <TurnRow key={turn.id} turn={turn} suggestions={suggestionsByTurn.get(idx) ?? []} callStartedAt={call.startedAt} customer={customer} />
+          <TurnRow key={turn.id} turn={turn} suggestions={suggestionsByTurn.get(idx) ?? []} callStartedAt={call.startedAt} customer={customer} workflow={workflow} />
         ))}
 
         {partials.CUSTOMER && (
@@ -775,7 +804,7 @@ function VoiceIntelligenceContent() {
       <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '1fr 360px', gridTemplateRows: '1fr', gap: 16 }}>
         {/* Transcript — left column (scrolls independently) */}
         <div>
-          <TranscriptPanel turns={state.turns} partials={state.partials} suggestionsByTurn={suggestionsByTurn} call={state.call} customer={state.customer} unresolvedPhone={state.unresolvedPhone} />
+          <TranscriptPanel turns={state.turns} partials={state.partials} suggestionsByTurn={suggestionsByTurn} call={state.call} customer={state.customer} unresolvedPhone={state.unresolvedPhone} workflow={workflow} />
         </div>
         {/* Right rail — full height (scrolls independently) */}
         <div>

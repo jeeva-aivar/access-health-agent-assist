@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { AgentPage, Field, TextInput, SelectInput, TagInput } from '@/components/agents/AgentShell'
 
 const DEPTHS = [{ value: 'summary', label: 'Summary' }, { value: 'standard', label: 'Standard' }, { value: 'deep', label: 'Deep dive' }]
-const KB_SOURCES = [{ value: 'corebridge_kb', label: 'Corebridge KB' }, { value: 'sharepoint', label: 'SharePoint guidelines' }, { value: 'cms_lcd', label: 'CMS LCD database' }]
+const KB_SOURCES = [{ value: 'corebridge_kb', label: 'Live assist KB' }, { value: 'sharepoint', label: 'SharePoint guidelines' }, { value: 'cms_lcd', label: 'CMS LCD database' }]
 
 export default function DenialsReviewerPage() {
   const [denialCode, setDenialCode] = useState('N290')

@@ -5,7 +5,7 @@ import { Icon } from '@/components/ui/Icon'
 import { StatusDot } from '@/components/ui/StatusDot'
 import { useApp } from '@/lib/app-context'
 
-// MOCK ONLY — no real PHI. Healthcare RCM tasks for Corebridge Financial demo.
+// MOCK ONLY — no real PHI. Healthcare RCM tasks for Live assist demo.
 const STACK_TASKS = [
   // AI priority
   { id: 'ai-01', time: '09:30', source: 'ai',  customer: 'Iyer, M.',     title: 'Prior-auth follow-up · CLM-9047',  tag: 'HIGHEST RISK', tagTone: 'danger',  status: 'PREP READY', statusTone: 'warning', duration: '30m', channel: 'Call',      value: '$3,420' },
@@ -101,7 +101,7 @@ function StackBlade({ task, onClose, onComplete }: { task: Task | null; onClose:
           <div style={{ marginTop: 24 }}>
             <div className="caption" style={{ fontSize: 10.5, marginBottom: 12 }}>WHY NOW</div>
             <p className="body" style={{ color: 'var(--text-secondary)' }}>
-              {task.source === 'ai'  ? 'Surfaced by Corebridge AI based on case value, urgency, and member-sentiment signals from the last 14 days. Team Lead aligned this morning.' : ''}
+              {task.source === 'ai'  ? 'Surfaced by Live assist based on case value, urgency, and member-sentiment signals from the last 14 days. Team Lead aligned this morning.' : ''}
               {task.source === 'mgr' ? `Assigned by ${anyTask.assignedBy || 'Team Lead'} during morning huddle. Tied to weekly OKR — flag back if scope creeps or you need cover.` : ''}
               {task.source === 'ad'  ? 'Surfaced after morning lock — ad-hoc. AI auto-routed based on customer history; rebalance other tasks if you accept.' : ''}
             </p>

@@ -5,12 +5,12 @@ import { useRouter } from 'next/navigation'
 import { Icon } from '@/components/ui/Icon'
 
 function LogoMark() {
-  // Corebridge Financial logo — white-inverted for the dark gradient panel.
+  // Aivar / Live assist logo — white-inverted for the dark gradient panel.
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src="/corebridge-logo.png"
-      alt="Corebridge Financial"
+      src="/Aivar Innovations Aivar Innovations logo.png"
+      alt="Live assist"
       style={{ display: 'block', height: 30, width: 'auto', objectFit: 'contain', mixBlendMode: 'screen', filter: 'brightness(2)' }}
     />
   )
@@ -165,7 +165,7 @@ export default function LoginPage() {
               <div style={{ marginTop: 32, paddingTop: 24, borderTop: '1px solid rgba(255,255,255,0.12)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>
                   <Icon name="ShieldCheck" size={13} />
-                  <span>Secured by Corebridge · IT-Sec audit-grade · TLS 1.3</span>
+                  <span>Secured by Live assist · IT-Sec audit-grade · TLS 1.3</span>
                 </div>
               </div>
             </form>
@@ -241,7 +241,7 @@ export default function LoginPage() {
         <div className="anim-fade-up" style={{ animationDelay: '120ms', maxWidth: 540 }}>
           <div className="caption" style={{ color: 'var(--idfc-red)', fontSize: 11 }}>EMPLOYEE AI WORKSPACE</div>
           <h2 style={{ fontSize: 44, fontWeight: 300, letterSpacing: '-0.02em', lineHeight: 1.1, color: 'var(--text-primary)', marginTop: 12 }}>
-            Your day, <span style={{ fontWeight: 600, color: 'var(--idfc-red)' }}>orchestrated</span> through Corebridge AI.
+            Your day, <span style={{ fontWeight: 600, color: 'var(--idfc-red)' }}>orchestrated</span> through Live assist.
           </h2>
           <p className="body-lg" style={{ color: 'var(--text-secondary)', maxWidth: 480, marginTop: 16 }}>
             Routine tasks automated for you. Priorities ranked and reasoned. Your judgement, where it matters most.
@@ -265,7 +265,7 @@ export default function LoginPage() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div className="caption" style={{ color: 'var(--text-tertiary)', fontSize: 11 }}>© 2026 Corebridge Financial · All rights reserved</div>
+          <div className="caption" style={{ color: 'var(--text-tertiary)', fontSize: 11 }}>© 2026 Live assist · All rights reserved</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             {['Privacy', 'Terms', 'Help'].map(lbl => (
               <span key={lbl} className="caption" style={{ color: 'var(--text-tertiary)', fontSize: 11, cursor: 'pointer' }}

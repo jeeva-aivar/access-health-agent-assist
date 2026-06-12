@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="64" viewBox="0 0 240 64">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#6C4CFF"/>
+      <stop offset="1" stop-color="#7B61FF"/>
+    </linearGradient>
+  </defs>
+  <rect width="240" height="64" rx="8" fill="transparent" />
+  <g transform="translate(8,4)">
+    <polygon points="12,0 24,6 24,18 12,24 0,18 0,6" fill="#fff" opacity="0.06"/>
+    <polygon points="12,2 22,7 22,17 12,22 2,17 2,7" fill="#6C4CFF"/>
+    <path d="M46 16c0-8.8 7.2-16 16-16h30v4H62c-6.6 0-12 5.4-12 12s5.4 12 12 12h30v4H62c-8.8 0-16-7.2-16-16z" fill="#fff" opacity="0.95"/>
+    <text x="86" y="22" font-family="Inter, Arial, sans-serif" font-size="18" fill="#fff" font-weight="700">Live assist</text>
+  </g>
+</svg>

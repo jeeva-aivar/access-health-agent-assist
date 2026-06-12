@@ -6,8 +6,8 @@ import { Providers } from './providers'
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 
 export const metadata: Metadata = {
-  title: 'Corebridge Financial · Agent Workspace',
-  description: 'Your day, orchestrated through Corebridge AI.',
+  title: 'Live assist · Agent Workspace',
+  description: 'Your day, orchestrated through Live assist.',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

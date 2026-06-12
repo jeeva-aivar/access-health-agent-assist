@@ -196,7 +196,7 @@ function SuggestionCard({ s, callStartedAt, workflow }: { s: Suggestion; callSta
   return (
     <div style={{ background: style.bg, border: `1px solid ${style.border}`, borderRadius: 10, padding: '14px 16px', marginTop: 10 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-        <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ah-emerald)' }}>◆ Corebridge AI · {style.label}</span>
+      <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ah-emerald)' }}>◆ Live assist · {style.label}</span>
         {stepIdx >= 0 && (
           <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--ah-deep)', padding: '2px 6px', borderRadius: 4, background: 'rgba(59,86,183,0.12)', border: '1px solid rgba(59,86,183,0.3)' }}>Step {stepIdx + 1}</span>
         )}
@@ -581,7 +581,7 @@ function HistoryTab({ customer }: { customer: Customer }) {
 function ComplianceTab({ customer }: { customer: Customer }) {
   const flags = [
     { ok: true,  title: 'HIPAA · 3-ID verification in progress', sub: 'Name + Member ID captured. Claim ID still pending — do not disclose claim details yet.' },
-    { ok: true,  title: 'Call recording consent · acknowledged',  sub: 'IVR consent captured at call start · retained per Corebridge policy' },
+    { ok: true,  title: 'Call recording consent · acknowledged',  sub: 'IVR consent captured at call start · retained per Live assist policy' },
     { ok: false, title: 'PHI in transcript · auto-redaction on',  sub: 'Real-time PII/PHI masking active · review redaction log post-call' },
     { ok: true,  title: 'Authorization on file',                  sub: 'Patient signed Authorization for Use & Disclosure · valid through Dec 31, 2026' },
     { ok: customer.sentiment !== 'negative', title: 'Escalation path · supervisor available', sub: customer.sentiment === 'negative' ? 'Sentiment cooling — flag for warm transfer if unresolved within 5 min' : 'Tier-2 available if claim status is ambiguous' },

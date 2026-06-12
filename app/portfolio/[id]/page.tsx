@@ -338,7 +338,7 @@ function CustomerDetailContent({ customerId }: { customerId: string }) {
             <div style={{ background: 'linear-gradient(135deg,rgba(220,38,38,0.04) 0%,var(--bg-card) 60%)', border: '1px solid rgba(220,38,38,0.18)', borderRadius: 10, padding: '18px 22px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                 <div style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--idfc-red-bright)' }} />
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--idfc-red-bright)', fontWeight: 600 }}>Corebridge AI · Relationship Insight</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--idfc-red-bright)', fontWeight: 600 }}>Live assist · Relationship Insight</span>
               </div>
               <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.65, color: 'var(--text-primary)' }}>{c.aiInsight}</p>
             </div>

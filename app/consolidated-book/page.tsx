@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { AppShell } from '@/components/shared/AppShell'
 import { Icon } from '@/components/ui/Icon'
 
-// MOCK ONLY — no real PHI. Aggregate caseload book for Corebridge Financial demo.
+// MOCK ONLY — no real PHI. Aggregate caseload book for Live assist demo.
 const SEGMENTS = [
   { label: 'Individual members', aum: 38.4, color: '#3B56B7' }, // Sapphire
   { label: 'Family plans',       aum: 22.1, color: '#1E3082' }, // True Cobalt

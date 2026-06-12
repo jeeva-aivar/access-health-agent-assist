@@ -75,8 +75,8 @@ function LogoMark({ collapsed = false }: { collapsed?: boolean }) {
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src="/corebridge-logo.png"
-      alt="Corebridge Financial"
+      src="/Aivar Innovations Aivar Innovations logo.png"
+      alt="Live assist"
       style={{
         display: 'block', flexShrink: 0,
         height: collapsed ? 20 : 26,
@@ -184,7 +184,7 @@ function HelpModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const items = [
     { ico: 'BookOpen',      t: 'Read the agent playbook',        d: 'How Agent AI Workspace fits your day · 12 min read' },
     { ico: 'PlayCircle',    t: 'Watch the 3-min walkthrough',    d: 'Morning briefing → debrief in one video' },
-    { ico: 'MessageCircle', t: 'Chat with the Corebridge AI bot', d: 'Avg response 12 sec · 24×7' },
+    { ico: 'MessageCircle', t: 'Chat with Live assist', d: 'Avg response 12 sec · 24×7' },
     { ico: 'Phone',         t: 'Call IT helpdesk',               d: '+1 (888) 555-4332 · Mon–Sat 08:00–22:00 CT' },
     { ico: 'Mail',          t: 'Email support',                  d: 'agent.workspace.support@accesshealthcare.com' },
   ]
@@ -398,7 +398,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const activeParentId = NAV_SECTIONS.flatMap(s => s.items).find(i => i.children?.some(c => c.path === pathname))?.id ?? ''
 
   // Determine page title
-  const pageTitle = allItems.find(i => i.path === pathname)?.label ?? 'Corebridge Agent Workspace'
+  const pageTitle = allItems.find(i => i.path === pathname)?.label ?? 'Live assist Agent Workspace'
 
   const [expandedId, setExpandedId] = useState<string>(activeParentId)
 

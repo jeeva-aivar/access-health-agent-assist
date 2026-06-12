@@ -35,7 +35,7 @@ export const COMMS_DATA: ActionItem[] = [
 Date: 04:01 CT · 19 May 2026
 Subject: Operative report · CLM-9047-2206
 
-Hello Corebridge,
+Hello,
 
 Per your records request dated 28 Apr, please find attached the operative report and pre-op notes for member ANH-2418-4421, DOS 22 Apr 2026 (CPT 70553 · MRI lumbar).
 
@@ -51,7 +51,7 @@ The package has been routed to our Coding team (cc'd) for medical-necessity revi
 
 Warm regards,
 Afsheen Mohammed
-Corebridge Financial · Dallas Hub`,
+Live assist · Dallas Hub`,
       confidence: 94,
       reasoning: [
         'Document set appears complete — operative report + pre-op notes attached',
@@ -163,7 +163,7 @@ Thanks for your message. Afsheen is on a member call until 09:30. Your query has
 
 If urgent, please call our Dallas Hub directly: +1 (214) 555-0100.
 
-— Corebridge AI (on behalf of Afsheen Mohammed)`,
+— Live assist (on behalf of Afsheen Mohammed)`,
       confidence: 99,
       reasoning: ['SMS received at 06:28 while agent unavailable', 'Standard OOO policy applied', 'Follow-up reminder set for 09:55 CT'],
       metaItems: [{ k: 'Channel', v: 'SMS · Twilio bridge' }, { k: 'Follow-up set', v: '09:55 CT' }, { k: 'Member tier', v: 'Priority' }],
@@ -177,13 +177,13 @@ If urgent, please call our Dallas Hub directly: +1 (214) 555-0100.
       kind: 'BIRTHDAY GREETING — AUTO-SENT', to: 'Robert Chen <r.chen@example.com>', subject: 'Wishing you a wonderful birthday, Mr. Chen',
       aiDraft: `Dear Mr. Chen,
 
-Warmest birthday wishes from me and the entire Corebridge Financial family. We're grateful for your continued trust over the years.
+Warmest birthday wishes from me and the entire Live assist family. We're grateful for your continued trust over the years.
 
 Wishing you a year of excellent health and many milestones ahead.
 
 Warm regards,
 Afsheen Mohammed & team
-Corebridge Financial · Dallas Hub`,
+Live assist · Dallas Hub`,
       confidence: 99,
       reasoning: ['Birthday date on file — annual trigger', 'Personal tone template applied for Priority tier', 'Sent at 07:15 to land before business hours'],
       metaItems: [{ k: 'Event', v: 'Birthday — Robert Chen' }, { k: 'Channel', v: 'Email + SMS' }, { k: 'Gift', v: 'None (policy)' }],

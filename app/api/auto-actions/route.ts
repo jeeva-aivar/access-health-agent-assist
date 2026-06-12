@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     summary: {
       totalActionsComplete: overnightStats?.actionsComplete ?? 0,
       totalAwaitingReview: overnightStats?.actionsAwaitingReview ?? 0,
-      headline: `${overnightStats?.actionsComplete ?? 0} things Corebridge AI handled overnight.`,
+      headline: `${overnightStats?.actionsComplete ?? 0} things Live assist handled overnight.`,
       subtext: 'Allow all, or review individually. Anything you reject becomes a rule.',
     },
     stats: {

@@ -115,7 +115,14 @@ function useAgentSocket(onEvent: (e: ServerEvent) => void) {
       const wsUrl = process.env.NEXT_PUBLIC_AGENT_WS_URL ?? `${proto}//${location.host}/api/agent/live`
       const ws = new WebSocket(wsUrl)
       wsRef.current = ws
-      ws.onopen = () => setStatus('connected')
+      ws.onopen = () => {
+        setStatus('connected')
+        // Signal the backend that the UI is ready to receive streams.
+        // The media proxy waits for this before piping Twilio audio tracks
+        // to Deepgram — without it the CUSTOMER track is never activated
+        // and the AI suggestion pipeline never triggers.
+        ws.send(JSON.stringify({ type: 'start' }))
+      }
       ws.onmessage = ({ data }) => { try { onRef.current(JSON.parse(data) as ServerEvent) } catch { /* ignore */ } }
       ws.onclose = () => {
         if (wsRef.current === ws) wsRef.current = null
@@ -135,8 +142,8 @@ function useAgentSocket(onEvent: (e: ServerEvent) => void) {
     }
   }, [])
 
-  // Receive-only socket. The UI no longer sends commands (Ask Assist removed).
-  return { status }
+  const send = useCallback((cmd: object) => { if (wsRef.current?.readyState === WebSocket.OPEN) wsRef.current.send(JSON.stringify(cmd)) }, [])
+  return { status, send }
 }
 
 // ─── Helper fns ───────────────────────────────────────────────────────────────

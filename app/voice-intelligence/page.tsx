@@ -74,11 +74,33 @@ function reducer(s: State, a: Action): State {
       customer: a.customer, unresolvedPhone: a.unresolvedPhone,
     }
     case 'pickCustomer': return { ...s, customer: a.customer, unresolvedPhone: null }
-    case 'callEnd': return { ...s, call: { ...s.call, status: 'ended', endedAt: Date.now() } }
+    case 'callEnd': {
+      // Commit any hanging partials before marking the call ended — prevents
+      // agent utterances that never received a transcript event from being lost.
+      const hangingTurns: Turn[] = []
+      const clearedPartials = { ...s.partials }
+      for (const role of ['AGENT', 'CUSTOMER'] as Role[]) {
+        if (s.partials[role]) {
+          hangingTurns.push({ id: `t-${s.turns.length + hangingTurns.length}-${Date.now()}`, role, text: s.partials[role], partial: false, callOffsetMs: s.call.startedAt ? Date.now() - s.call.startedAt : 0 })
+          clearedPartials[role] = ''
+        }
+      }
+      return { ...s, turns: [...s.turns, ...hangingTurns], partials: clearedPartials, call: { ...s.call, status: 'ended', endedAt: Date.now() } }
+    }
     case 'partial': return { ...s, partials: { ...s.partials, [a.label]: a.text } }
     case 'turn': {
       const turn: Turn = { id: `t-${s.turns.length}-${Date.now()}`, role: a.label, text: a.text, partial: false, callOffsetMs: s.call.startedAt ? Date.now() - s.call.startedAt : 0 }
-      return { ...s, turns: [...s.turns, turn], partials: { ...s.partials, [a.label]: '' } }
+      // Clear the partial for this role. Also clear both possible raw Twilio
+      // track aliases ('inbound' → AGENT, 'outbound' → CUSTOMER) in case the
+      // backend sent partials under one label and transcript under another.
+      const partialsToClear: Partial<Record<string, string>> = {
+        [a.label]: '',
+        ...(a.label === 'AGENT'    ? { inbound: '' }  : {}),
+        ...(a.label === 'CUSTOMER' ? { outbound: '' } : {}),
+        ...(a.label === 'inbound'  ? { AGENT: '' }    : {}),
+        ...(a.label === 'outbound' ? { CUSTOMER: '' } : {}),
+      }
+      return { ...s, turns: [...s.turns, turn], partials: { ...s.partials, ...partialsToClear } }
     }
     case 'assistChunk': {
       const existing = s.suggestions[a.id]
@@ -753,8 +775,15 @@ function VoiceIntelligenceContent() {
         break
       }
       case 'call_end':     dispatch({ type: 'callEnd' }); break
-      case 'partial':      dispatch({ type: 'partial', label: e.label, text: e.text }); break
-      case 'transcript':   dispatch({ type: 'turn', label: e.label, text: e.text }); break
+      case 'partial': {
+        // Normalise raw Twilio track labels if the backend forwards them unresolved
+        const pLabel: Role = (e.label === 'inbound' ? 'AGENT' : e.label === 'outbound' ? 'CUSTOMER' : e.label) as Role
+        dispatch({ type: 'partial', label: pLabel, text: e.text }); break
+      }
+      case 'transcript': {
+        const tLabel: Role = (e.label === 'inbound' ? 'AGENT' : e.label === 'outbound' ? 'CUSTOMER' : e.label) as Role
+        dispatch({ type: 'turn', label: tLabel, text: e.text }); break
+      }
       case 'assist_chunk': dispatch({ type: 'assistChunk', id: e.suggestionId, chunk: e.chunk, stepId: e.stepId }); break
       case 'assist_done':  dispatch({ type: 'assistDone', id: e.suggestionId, kind: e.kind, latencyMs: e.latencyMs, timeToFirstToken: e.timeToFirstToken, inputTokens: e.inputTokens, outputTokens: e.outputTokens, stepId: e.stepId }); break
       case 'sop_state':    dispatch({ type: 'sopState', state: { currentStepIndex: e.currentStepIndex, completedStepIds: e.completedStepIds } }); break

@@ -27,13 +27,15 @@ interface CallState { status: CallStatus; callSid: string | null; startedAt: num
 
 // ServerEvent — call_start can now carry an optional `phone` (E.164) so the
 // backend can tell the UI which member is calling. memberId is a fallback.
+type LiveSentiment = 'satisfied' | 'neutral' | 'unsatisfied'
+
 type ServerEvent =
   | { type: 'call_start'; callSid: string; phone?: string; memberId?: string }
   | { type: 'call_end'; callSid: string }
   | { type: 'partial'; label: Role; text: string }
   | { type: 'transcript'; label: Role; text: string; callOffset?: string }
   | { type: 'assist_chunk'; suggestionId: string; chunk: string; stepId?: string }
-  | { type: 'assist_done'; suggestionId: string; kind: AlertKind; latencyMs: number; timeToFirstToken: number; inputTokens: number; outputTokens: number; fullText: string; stepId?: string }
+  | { type: 'assist_done'; suggestionId: string; kind: AlertKind; latencyMs: number; timeToFirstToken: number; inputTokens: number; outputTokens: number; fullText: string; stepId?: string; sentiment?: LiveSentiment; sentimentScore?: number; nextBestAction?: string }
   | { type: 'sop_state'; workflowId?: string; currentStepIndex: number; completedStepIds: string[] }
 
 // ─── State machine ────────────────────────────────────────────────────────────
@@ -44,8 +46,11 @@ interface State {
   partials: Record<Role, string>
   suggestions: Record<string, Suggestion>
   sopFromServer: SopState | null
-  customer: Customer            // hydrated from phone on call_start (or picker)
-  unresolvedPhone: string | null  // backend sent a phone we don't recognise
+  customer: Customer
+  unresolvedPhone: string | null
+  liveSentiment: LiveSentiment | null
+  liveSentimentScore: number | null
+  liveNextBestAction: string | null
 }
 
 const init: State = {
@@ -54,6 +59,9 @@ const init: State = {
   sopFromServer: null,
   customer: DEFAULT_CUSTOMER,
   unresolvedPhone: null,
+  liveSentiment: null,
+  liveSentimentScore: null,
+  liveNextBestAction: null,
 }
 
 type Action =
@@ -63,7 +71,7 @@ type Action =
   | { type: 'partial'; label: Role; text: string }
   | { type: 'turn'; label: Role; text: string }
   | { type: 'assistChunk'; id: string; chunk: string; stepId?: string }
-  | { type: 'assistDone'; id: string; kind: AlertKind; latencyMs: number; timeToFirstToken: number; inputTokens: number; outputTokens: number; stepId?: string }
+  | { type: 'assistDone'; id: string; kind: AlertKind; latencyMs: number; timeToFirstToken: number; inputTokens: number; outputTokens: number; stepId?: string; sentiment?: LiveSentiment; sentimentScore?: number; nextBestAction?: string }
   | { type: 'sopState'; state: SopState }
 
 function reducer(s: State, a: Action): State {
@@ -111,7 +119,13 @@ function reducer(s: State, a: Action): State {
     case 'assistDone': {
       const existing = s.suggestions[a.id]
       if (!existing) return s
-      return { ...s, suggestions: { ...s.suggestions, [a.id]: { ...existing, done: true, kind: a.kind, latencyMs: a.latencyMs, timeToFirstToken: a.timeToFirstToken, inputTokens: a.inputTokens, outputTokens: a.outputTokens, stepId: a.stepId ?? existing.stepId } } }
+      const next: State = { ...s, suggestions: { ...s.suggestions, [a.id]: { ...existing, done: true, kind: a.kind, latencyMs: a.latencyMs, timeToFirstToken: a.timeToFirstToken, inputTokens: a.inputTokens, outputTokens: a.outputTokens, stepId: a.stepId ?? existing.stepId } } }
+      if (a.sentiment) {
+        next.liveSentiment = a.sentiment
+        next.liveSentimentScore = a.sentimentScore ?? null
+      }
+      if (a.nextBestAction) next.liveNextBestAction = a.nextBestAction
+      return next
     }
     case 'sopState': return { ...s, sopFromServer: a.state }
     default: return s
@@ -449,8 +463,23 @@ function SectionHead({ children, tag }: { children: React.ReactNode; tag?: strin
   )
 }
 
-function MemberTab({ customer }: { customer: Customer }) {
+function MemberTab({ customer, liveSentiment, liveSentimentScore, liveNextBestAction }: { customer: Customer; liveSentiment?: LiveSentiment | null; liveSentimentScore?: number | null; liveNextBestAction?: string | null }) {
   const langLabel = customer.language === 'es' ? 'ES (Spanish-preferred)' : customer.language === 'tl' ? 'TL (Tagalog)' : 'EN-US'
+
+  // ── Sentiment helpers ──
+  const effectiveSentiment = customer.sentiment
+  const sentimentResolved = liveSentiment ?? (effectiveSentiment === 'positive' ? 'satisfied' : effectiveSentiment === 'negative' ? 'unsatisfied' : 'neutral')
+  const sentimentLabel = sentimentResolved.charAt(0).toUpperCase() + sentimentResolved.slice(1)
+  const sentimentBadge = (() => {
+    if (sentimentResolved === 'satisfied') return { color: '#16a34a', bg: 'rgba(22,163,74,0.08)', border: 'rgba(22,163,74,0.3)' }
+    if (sentimentResolved === 'unsatisfied') return { color: '#dc2626', bg: 'rgba(220,38,38,0.08)', border: 'rgba(220,38,38,0.3)' }
+    return { color: 'var(--text-secondary)', bg: 'var(--bg-subtle)', border: 'var(--border-subtle)' }
+  })()
+  const scoreToRightPct = liveSentimentScore != null
+    ? `${Math.round((1 - liveSentimentScore) * 80)}%`
+    : sentimentResolved === 'satisfied' ? '10%' : sentimentResolved === 'neutral' ? '38%' : '70%'
+  const sentimentEmoji = sentimentResolved === 'satisfied' ? '😊' : sentimentResolved === 'unsatisfied' ? '😟' : '😐'
+
   return (
     <>
       <SectionHead>Patient identity</SectionHead>
@@ -463,6 +492,117 @@ function MemberTab({ customer }: { customer: Customer }) {
         <RailRow k="Effective" v={fmtDate(customer.effectiveDate)} vColor="#16a34a" />
         <RailRow k="PCP" v={customer.pcp} />
       </div>
+
+      {/* ── Live Sentiment ── */}
+      <SectionHead tag={liveSentiment ? 'AI · live' : 'Voice AI'}>
+        Sentiment · {liveSentiment ? 'live' : 'this call'}
+      </SectionHead>
+      <div style={{ background: sentimentBadge.bg, border: `1px solid ${sentimentBadge.border}`, borderRadius: 10, padding: '12px 14px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 22, lineHeight: 1 }}>{sentimentEmoji}</span>
+            <span style={{ fontFamily: "'Source Serif 4',Georgia,serif", fontSize: 18, fontWeight: 600, color: sentimentBadge.color }}>{sentimentLabel}</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {liveSentimentScore != null && (
+              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: 'var(--text-tertiary)' }}>
+                {Math.round(liveSentimentScore * 100)}% conf.
+              </span>
+            )}
+            {liveSentiment && (
+              <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: 'var(--ah-emerald)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--ah-emerald)', animation: 'pulse 1.5s infinite' }} />
+                AI · live
+              </span>
+            )}
+          </div>
+        </div>
+        {/* Three-zone gauge */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: "'JetBrains Mono',monospace", fontSize: 9.5, color: 'var(--text-tertiary)', marginBottom: 5 }}>
+          <span>😟 Unsatisfied</span><span>😐 Neutral</span><span>Satisfied 😊</span>
+        </div>
+        <div style={{ position: 'relative', height: 7, borderRadius: 999, background: 'var(--border-subtle)', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', inset: `0 ${scoreToRightPct} 0 0`, background: `linear-gradient(to right, rgba(220,38,38,0.6), ${sentimentBadge.color})`, borderRadius: 999 }} />
+        </div>
+        <div style={{ display: 'flex', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
+          {(['unsatisfied', 'neutral', 'satisfied'] as const).map(l => {
+            const active = sentimentResolved === l
+            return (
+              <span key={l} style={{
+                fontFamily: "'JetBrains Mono',monospace", fontSize: 9.5, fontWeight: 700, letterSpacing: '0.08em',
+                textTransform: 'uppercase', padding: '3px 8px', borderRadius: 5,
+                background: active ? sentimentBadge.bg : 'transparent',
+                border: `1px solid ${active ? sentimentBadge.border : 'var(--border-subtle)'}`,
+                color: active ? sentimentBadge.color : 'var(--text-tertiary)',
+              }}>{l}</span>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* ── NEXT BEST ACTION ── */}
+      <div style={{ margin: '18px 0 0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, fontWeight: 700, letterSpacing: '0.13em', textTransform: 'uppercase', color: 'var(--ah-emerald)' }}>
+            ◆ Next Best Action
+          </span>
+          {liveNextBestAction && (
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: 'var(--ah-emerald)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--ah-emerald)', animation: 'pulse 1.5s infinite', flexShrink: 0 }} />
+              AI · live
+            </span>
+          )}
+        </div>
+        <div style={{
+          background: liveNextBestAction ? 'rgba(16,185,129,0.05)' : 'var(--bg-subtle)',
+          border: `1.5px solid ${liveNextBestAction ? 'rgba(16,185,129,0.3)' : 'var(--border-subtle)'}`,
+          borderRadius: 10,
+          padding: '14px 16px',
+        }}>
+          <p style={{
+            fontFamily: "'Source Serif 4',Georgia,serif",
+            fontSize: 15,
+            fontStyle: liveNextBestAction ? 'normal' : 'italic',
+            fontWeight: liveNextBestAction ? 500 : 400,
+            lineHeight: 1.55,
+            color: liveNextBestAction ? 'var(--text-primary)' : 'var(--text-secondary)',
+            margin: 0,
+          }}>
+            {liveNextBestAction ?? customer.callReason}
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 10 }}>
+            <span style={{
+              fontFamily: "'JetBrains Mono',monospace", fontSize: 9.5, fontWeight: 700,
+              letterSpacing: '0.08em', textTransform: 'uppercase',
+              padding: '2px 7px', borderRadius: 4,
+              background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)',
+              color: 'var(--ah-emerald)',
+            }}>
+              {customer.flow === 'claim_status' ? 'Claim status' : customer.flow === 'eligibility_priorauth' ? 'Eligibility + PA' : 'Billing / refund'}
+            </span>
+            {customer.activeClaimId && (
+              <span style={{
+                fontFamily: "'JetBrains Mono',monospace", fontSize: 9.5,
+                letterSpacing: '0.06em', textTransform: 'uppercase',
+                padding: '2px 7px', borderRadius: 4,
+                background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)',
+                color: 'var(--text-tertiary)',
+              }}>{customer.activeClaimId}</span>
+            )}
+          </div>
+          {!liveNextBestAction && customer.notes && (
+            <div style={{
+              marginTop: 10, paddingTop: 10,
+              borderTop: '1px dashed var(--border-subtle)',
+              fontSize: 11.5, lineHeight: 1.5, color: 'var(--text-tertiary)',
+            }}>
+              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginRight: 6 }}>Agent note</span>
+              {customer.notes}
+            </div>
+          )}
+        </div>
+      </div>
+
       <SectionHead tag="Voice AI">Verification status</SectionHead>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
         <MetricBox label="Member ID" value="✓" positive />
@@ -645,7 +785,7 @@ function ComplianceTab({ customer }: { customer: Customer }) {
   )
 }
 
-function RightRailPanel({ workflow, sopState, latestSuggestion, customer }: { workflow: SopWorkflow; sopState: SopState; latestSuggestion?: { text: string; kind?: string } | null; customer: Customer }) {
+function RightRailPanel({ workflow, sopState, latestSuggestion, customer, liveSentiment, liveSentimentScore, liveNextBestAction }: { workflow: SopWorkflow; sopState: SopState; latestSuggestion?: { text: string; kind?: string } | null; customer: Customer; liveSentiment?: LiveSentiment | null; liveSentimentScore?: number | null; liveNextBestAction?: string | null }) {
   const [active, setActive] = useState<RailTab>('member')
   const flowLabel = customer.flow === 'claim_status' ? 'Claim status' : customer.flow === 'eligibility_priorauth' ? 'Eligibility + PA' : 'Billing / refund'
   return (
@@ -675,7 +815,7 @@ function RightRailPanel({ workflow, sopState, latestSuggestion, customer }: { wo
       </div>
 
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '4px 16px 16px' }}>
-        {active === 'member'     && <MemberTab customer={customer} />}
+        {active === 'member'     && <MemberTab customer={customer} liveSentiment={liveSentiment} liveSentimentScore={liveSentimentScore} liveNextBestAction={liveNextBestAction} />}
         {active === 'claim'      && <ClaimTab customer={customer} />}
         {active === 'coverage'   && <CoverageTab customer={customer} />}
         {active === 'history'    && <HistoryTab customer={customer} />}
@@ -785,7 +925,7 @@ function VoiceIntelligenceContent() {
         dispatch({ type: 'turn', label: tLabel, text: e.text }); break
       }
       case 'assist_chunk': dispatch({ type: 'assistChunk', id: e.suggestionId, chunk: e.chunk, stepId: e.stepId }); break
-      case 'assist_done':  dispatch({ type: 'assistDone', id: e.suggestionId, kind: e.kind, latencyMs: e.latencyMs, timeToFirstToken: e.timeToFirstToken, inputTokens: e.inputTokens, outputTokens: e.outputTokens, stepId: e.stepId }); break
+      case 'assist_done':  dispatch({ type: 'assistDone', id: e.suggestionId, kind: e.kind, latencyMs: e.latencyMs, timeToFirstToken: e.timeToFirstToken, inputTokens: e.inputTokens, outputTokens: e.outputTokens, stepId: e.stepId, sentiment: e.sentiment, sentimentScore: e.sentimentScore, nextBestAction: e.nextBestAction }); break
       case 'sop_state':    dispatch({ type: 'sopState', state: { currentStepIndex: e.currentStepIndex, completedStepIds: e.completedStepIds } }); break
     }
   }, [])
@@ -850,7 +990,7 @@ function VoiceIntelligenceContent() {
         </div>
         {/* Right rail — full height (scrolls independently) */}
         <div>
-          <RightRailPanel workflow={workflow} sopState={effectiveSopState} latestSuggestion={latestSuggestion} customer={state.customer} />
+          <RightRailPanel workflow={workflow} sopState={effectiveSopState} latestSuggestion={latestSuggestion} customer={state.customer} liveSentiment={state.liveSentiment} liveSentimentScore={state.liveSentimentScore} liveNextBestAction={state.liveNextBestAction} />
         </div>
       </div>
     </div>

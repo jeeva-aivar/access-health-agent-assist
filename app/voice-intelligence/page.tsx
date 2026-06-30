@@ -24,7 +24,6 @@ interface Suggestion {
 }
 interface Turn { id: string; role: Role; text: string; partial: boolean; callOffsetMs: number }
 interface CallState { status: CallStatus; callSid: string | null; startedAt: number | null; endedAt: number | null }
-
 // ServerEvent — call_start can now carry an optional `phone` (E.164) so the
 // backend can tell the UI which member is calling. memberId is a fallback.
 type LiveSentiment = 'satisfied' | 'neutral' | 'unsatisfied'

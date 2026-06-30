@@ -105,8 +105,8 @@ function reducer(s: State, a: Action): State {
         [a.label]: '',
         ...(a.label === 'AGENT'    ? { inbound: '' }  : {}),
         ...(a.label === 'CUSTOMER' ? { outbound: '' } : {}),
-        ...(a.label === 'inbound'  ? { AGENT: '' }    : {}),
-        ...(a.label === 'outbound' ? { CUSTOMER: '' } : {}),
+        ...((a.label as string) === 'inbound'  ? { AGENT: '' }    : {}),
+        ...((a.label as string) === 'outbound' ? { CUSTOMER: '' } : {}),
       }
       return { ...s, turns: [...s.turns, turn], partials: { ...s.partials, ...partialsToClear } }
     }
